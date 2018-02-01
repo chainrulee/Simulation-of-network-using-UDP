@@ -1,6 +1,13 @@
-main: main.o dijkstra.o
-	gcc -o main main.o dijkstra.o
-main.o: main.c dijkstra.h
-	gcc -c main.c
-mytool1.o: dijkstra.c dijkstra.h
+main: main.o control switch
+	gcc -o main main.c
+control: control.o dijkstra.o
+	gcc -o control control.o dijkstra.o
+control.o: control.c dijkstra.h
+	gcc -c control.c
+dijkstra.o: dijkstra.c dijkstra.h
 	gcc -c dijkstra.c
+switch: switch.o
+	gcc -o switch switch.c
+.PHONY: clean
+clean:
+	rm *.o main control switch
