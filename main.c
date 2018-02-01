@@ -11,7 +11,7 @@
 #include "structure.h"
 #include "dijkstra.h"
 #define PATH "topo_3nodes.txt"
-#define DEBUG 0
+#define DEBUG 1
 int main(int argc, char **argv) {
     FILE *fptr;
     char login_info[128];
