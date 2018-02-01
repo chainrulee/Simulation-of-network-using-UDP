@@ -17,8 +17,6 @@ int main(int argc, char **argv) {
     char login_info[128];
     char *token;
     Tpg tpg;
-    node_t test;
-    test.id = 2;
     
     if ((fptr = fopen(PATH, "r")) == NULL) {
     printf("open_file_error");
