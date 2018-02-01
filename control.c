@@ -17,8 +17,6 @@ int main(int argc, char **argv) {
     char login_info[128];
     char *token;
     Tpg tpg;
-    node_t test;
-    test.id = 2;
     
     if ((fptr = fopen(PATH, "r")) == NULL) {
     printf("open_file_error");
@@ -72,6 +70,7 @@ int main(int argc, char **argv) {
                    break;
                case 3:
                    (tpg.edge+edge_idx)->delay = atoi(token);
+                   (tpg.edge+edge_idx)->active = 1;
                    break;
                default:
                    break;
@@ -97,6 +96,7 @@ int main(int argc, char **argv) {
 		cnt, tpg.edge[cnt].node1, (tpg.edge+cnt)->node2, (tpg.edge+cnt)->bandwidth, (tpg.edge+cnt)->delay, tpg.edge_num, tpg.switch_num);
     }
 #endif
+  int** j = dijkstra(tpg);
 	free (tpg.edge);
     return 0;
 }

@@ -20,12 +20,13 @@ int maxWidth(int width[], int sptSet[], int V, int *switches) {
 int** dijkstra(Tpg tpg) {
 	int n = tpg.switch_num;
 	node_t *nodeptr[n];
+	node_t tmp[n];
 	node_t *ptr;
 	int **res = (int **)malloc(n * sizeof(int*));
 	int i;
 	for (i = 0; i < n; ++i) {
 		res[i] = (int *)malloc(n * sizeof(int));
-		nodeptr[i] = (node_t *)malloc(sizeof(node_t));
+		nodeptr[i] = &tmp[i];
 	}
 	struct Graph graph;
 	int *switches = tpg.switches_ptr;
@@ -33,27 +34,28 @@ int** dijkstra(Tpg tpg) {
 	for (i = 0; i < n; ++i){
 		nodeptr[i]->next = graph.adj_edge+i;
 	}
-	node_t *tmp;
 	printf("please\n");
 	for (i = 0; i < tpg.edge_num; ++i) {
-		int node1 = tpg.edge[i].node1;
-		int node2 = tpg.edge[i].node2;
+		int node1 = tpg.edge[i].node1 - 1;
+		int node2 = tpg.edge[i].node2 - 1;
+		printf("node2 = %d", node2);
 		int bandwidth = tpg.edge[i].bandwidth;
 		int active = tpg.edge[i].active;
 		printf("switches %d %d %d\n", switches[node1], switches[node2], active);
 		if (switches[node1] && switches[node2] && active) {
-			printf("why\n");
-			nodeptr[node1]->next = (node_t *)malloc(sizeof(node_t));
+			//printf("why\n");
+			if (nodeptr[node1]->next == NULL) nodeptr[node1]->next = (node_t *)malloc(sizeof(node_t));
 			//tmp = nodeptr+node1;
 			//tmp = tmp->next;
-			printf("why\n");
+			//printf("why\n");
 			nodeptr[node1] = nodeptr[node1]->next;
-			printf("why\n");
+			//printf("why\n");
 			nodeptr[node1]->id = node2;
-			printf("why\n");
+			//printf("node1->id = %d\n", graph.adj_edge->id);
+			//printf("why\n");
 			nodeptr[node1]->bandwidth =  bandwidth;
 			nodeptr[node1]->next = NULL;
-			nodeptr[node2]->next = (node_t *)malloc(sizeof(node_t));
+			if (nodeptr[node2]->next == NULL) nodeptr[node2]->next = (node_t *)malloc(sizeof(node_t));
 			//tmp = nodeptr+node2;
 			//tmp = tmp->next;
 			nodeptr[node2] = nodeptr[node2]->next;
@@ -62,6 +64,11 @@ int** dijkstra(Tpg tpg) {
 			nodeptr[node2]->next = NULL;
 		}
 	}
+	/*ptr = graph.adj_edge+2;
+	while (ptr != NULL) {
+		printf("test id = %d\n",ptr->id);
+		ptr = ptr->next;
+	}*/
 	int src;
 	for (src = 0; src < n; ++src) {
 		printf("scr = %d\n", src);
@@ -72,18 +79,18 @@ int** dijkstra(Tpg tpg) {
 		  	width[i] = -1, sptSet[i] = 0;
 		width[src] = INT_MAX;
 		int count;
-		for (count = 0; count < n-1; ++count) {
-			printf("in\n");
+		for (count = 0; count < n; ++count) {
+			//printf("in\n");
 			// Pick the minimum distance vertex from the set of vertices not
 			// yet processed. u is always equal to src in first iteration.
 			int u = maxWidth(width, sptSet, n, switches);
-			printf("%d\n",u);
+			//printf("%d\n",u);
 			// Mark the picked vertex as processed
 			sptSet[u] = 1;
 
 			if (width[u] == -1) break;
 			if (u != src) {
-			ptr = graph.adj_edge+u;
+				ptr = graph.adj_edge+u;
 				while (ptr != NULL) {
 					if (sptSet[ptr->id]) {
 					    if (ptr->id == src)
@@ -98,16 +105,18 @@ int** dijkstra(Tpg tpg) {
 			// Update dist value of the adjacent vertices of the picked vertex.
 			ptr = graph.adj_edge+u;
 			while (ptr != NULL) {
-				printf("hwihaoi\n");
+				//printf("hwihaoi\n");
 				int v = ptr->id;
-				printf("yes\n");
+				//printf("yes\n");
 				if (!sptSet[v] && (MIN(width[u], ptr->bandwidth) > width[v])) 
 				  	width[v] = MIN(width[u], ptr->bandwidth);
-				printf("id = %d\n",ptr->id);
+				//printf("id = %d\n",ptr->id);
 				ptr = ptr->next;
-				printf("no\n");
+				//if (ptr == NULL) printf("GG\n");
+				//printf("no\n");
 			}
-			printf("what\n");
+			printf("width = %d %d %d\n", width[0],width[1],width[2]);
+			//printf("what\n");
 
 		}
 	}
@@ -121,10 +130,12 @@ int** dijkstra(Tpg tpg) {
 
 	for (i = 0; i < n; i++) {
 		nodeptr[i] = graph.adj_edge+i;
+		nodeptr[i] = nodeptr[i]->next;
 		while(nodeptr[i] != NULL) {
-			ptr = nodeptr[i]->next;
-			free(nodeptr[i]);
-			nodeptr[i] = ptr;
+			ptr = nodeptr[i];
+			nodeptr[i] = nodeptr[i]->next;
+			//printf("noteptr[i] = %d\n", nodeptr[i]->id);
+			free(ptr);
 		}
 	}
 	free(graph.adj_edge);
