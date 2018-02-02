@@ -7,7 +7,14 @@
 #include <unistd.h>
 #include <signal.h>
 #include "structure.h"
+/***
+Usage: ./main [topology] file. Example:./main topology.txt
 
+Start a switch: switch [id] [hostname] [port] [-s/-k]
+-k: kill a switch process
+-s: activate a switch process
+
+***/
 int main (int argc, char **argv) {
 	FILE *fptr;
 	char login_info[128];
@@ -117,3 +124,4 @@ int main (int argc, char **argv) {
 	}
 	free(table);
 }
+
