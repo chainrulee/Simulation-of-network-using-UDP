@@ -63,6 +63,10 @@ int main (int argc, char **argv) {
 			for (i = 1; cmd[i-1] != NULL && i < 6; ++i) {
 				cmd[i] = strtok(NULL, " \n");
 			}
+			if (i < 6) {
+				printf("Error! numbers of argument: %d, not enought, please enter again. \n", i);
+				continue;
+			}
 /*
 			int id = atoi(cmd[1]);
 			int port = atoi(cmd[3]);
