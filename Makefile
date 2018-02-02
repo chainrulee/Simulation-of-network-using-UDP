@@ -7,7 +7,7 @@ control.o: control.c dijkstra.h
 dijkstra.o: dijkstra.c dijkstra.h
 	gcc -c dijkstra.c
 switch: switch.o
-	gcc -o switch switch.c
+	gcc -l pthread -o switch switch.c
 .PHONY: clean
 clean:
 	rm *.o main control switch
