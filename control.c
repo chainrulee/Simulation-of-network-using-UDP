@@ -10,15 +10,15 @@
 #include <unistd.h>
 #include "structure.h"
 #include "dijkstra.h"
-#define PATH "topo_3nodes.txt"
 #define DEBUG 0
+
 int main(int argc, char **argv) {
     FILE *fptr;
     char login_info[128];
     char *token;
     Tpg tpg;
     
-    if ((fptr = fopen(PATH, "r")) == NULL) {
+    if ((fptr = fopen(argv[1], "r")) == NULL) {
     printf("open_file_error");
         exit(1);
     }
@@ -38,7 +38,7 @@ int main(int argc, char **argv) {
 //    printf("line numbers: %d \n", cnt);
     fclose(fptr);
 
-    if ((fptr = fopen(PATH, "r")) == NULL) {
+    if ((fptr = fopen(argv[1], "r")) == NULL) {
         printf("open_file_error");
         exit(1);
     }

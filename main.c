@@ -24,6 +24,15 @@ int main (int argc, char **argv) {
         printf("open_file_error");
         exit(1);
     }
+	pid_t ctrl_pid;
+	ctrl_pid = fork();
+	if (ctrl_pid == -1) {
+		perror("fork failure");
+		exit(EXIT_FAILURE);
+	} else if (ctrl_pid == 0) {
+		execl("control", "control", argv[1], NULL);
+		perror("Shoud not go here. this line means execl somewhat failed! \n");
+	}
 
 	fgets(login_info, 128, fptr);
 	int node_num = atoi(strtok(login_info, "\n"));
