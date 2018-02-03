@@ -8,6 +8,7 @@
 #define TPG_UPDATE        63
 #define ROUTER_UPDATE     64
 #define KEEP_ALIVE        65
+#define BUFSIZE           2048
 
 typedef struct edge {
 	int node1;
