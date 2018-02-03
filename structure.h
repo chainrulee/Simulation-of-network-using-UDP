@@ -4,7 +4,11 @@
 #define SERVICE_PORT 21234
 #define REGISTER_REQUEST 246 
 #define REGISTER_RESPONSE 61
-#define KILL_SWITCH 62
+#define KILL_SWITCH       62
+#define TPG_UPDATE        63
+#define ROUTER_UPDATE     64
+#define KEEP_ALIVE        65
+
 typedef struct edge {
 	int node1;
 	int node2;
