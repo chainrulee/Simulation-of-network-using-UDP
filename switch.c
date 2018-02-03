@@ -9,9 +9,9 @@ static volatile int linkk;
 void *thread(void *ptr)
 {
     int type = (int) ptr;
-	while (1) {     
-        read(STDIN_FILENO, &linkk, sizeof(int));
-		printf("children's pthread, got number: %d \n", linkk);
+	 while (1) {
+        printf(" Main switch funciton \n");
+        sleep(5);
      }
 
     return  ptr;
@@ -33,9 +33,9 @@ int main(int argc, char **argv)
 	for (i = 0; i < argc; ++i) {
 		printf("argv[%d] is %s \n", i, argv[i]);
 	}
-    while (1) {
-        printf(" Main switch funciton \n");
-        sleep(5);
+    while (1) {     
+        read(STDIN_FILENO, &linkk, sizeof(int));
+		printf("children's pthread, got number: %d \n", linkk);
      }
 	//pthread_join(thread2,NULL);
     return 0;
