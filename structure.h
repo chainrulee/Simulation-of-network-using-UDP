@@ -26,6 +26,6 @@ typedef struct pair_pid_nid {
 	pid_t pid;
 	int nid;
 	int active;
-	int *pipe_fd_p;
+	int pipe_fd_p[2];
 } PNid;
 #endif

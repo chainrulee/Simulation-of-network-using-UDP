@@ -82,16 +82,18 @@ int main (int argc, char **argv) {
 */
 			int nid = atoi(cmd[1]);
 			if (strcmp(cmd[4], "-f") == 0) { // equal
-				if (1 || table[nid].active == 1) {
-					int *pipe_fd = table[nid].pipe_fd_p;
-					write(pipe_fd[1], &nid, sizeof(int));
-				}
+				if (table[nid].active == 0)
+					continue;
+
+				int *pipe_fd = table[nid].pipe_fd_p;
+				write(pipe_fd[1], &nid, sizeof(int));
+
 			} else {
 				if (strcmp(cmd[4], "-s") == 0) {
 					if (table[nid].active == 1)
 						continue;
 						//===== Prepare Pipe =====//
-					int *pipe_fd = table[nid].pipe_fd_p = (int*) malloc(2*sizeof(int));
+					int *pipe_fd = table[nid].pipe_fd_p ;
 					if (pipe(pipe_fd) == -1) {
 						printf("Error: Unable to create pipe. \n");
 						exit(EXIT_FAILURE);
@@ -119,8 +121,6 @@ int main (int argc, char **argv) {
 					if (table[nid].active == 0)
 						continue;
 					kill(table[nid].pid, SIGKILL);
-					free(table[nid].pipe_fd_p);
-					table[nid].pipe_fd_p = NULL;
 					table[nid].active = 0;
 					table[nid].nid = 0;
 					table[nid].pid = 0;
@@ -131,10 +131,9 @@ int main (int argc, char **argv) {
 			printf("Retval: %d; No data within five seconds.\n",retval);
 		}
 	}
-	for (i = 0; i < node_num; ++i) {
-		if (table[i].active)
-			free(table[i].pipe_fd_p);
-	}
+	for (i = 0; i < node_num; ++i)
+		free(table[i].pipe_fd_p);
+
 	free(table);
 }
 
