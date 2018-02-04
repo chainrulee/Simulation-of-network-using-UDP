@@ -5,14 +5,14 @@
 
 int maxWidth(int width[], int sptSet[], int V, int *switches) {
     // Initialize min value
-    int max = 0, max_index;
+    int max = INT_MIN, max_index;
     int v;
     for (v = 0; v < V; ++v) {
-    if (!switches[v]) continue;
-    if (sptSet[v] == 0 && width[v] >= max) {
-      max = width[v], max_index = v;
-      printf("max_index = %d\n",v);
-    }
+	    if (!switches[v]) continue;
+	    if (sptSet[v] == 0 && width[v] > max) {
+			max = width[v], max_index = v;
+			printf("max_index = %d\n",v);
+	    }
     }
     return max_index;
 }
@@ -23,10 +23,15 @@ int** dijkstra(Tpg tpg) {
 	node_t tmp[n];
 	node_t *ptr;
 	int **res = (int **)malloc(n * sizeof(int*));
-	int i;
+	int i, j;
 	for (i = 0; i < n; ++i) {
 	    res[i] = (int *)malloc(n * sizeof(int));
 	    nodeptr[i] = &tmp[i];
+  	}
+  	for (i = 0; i < n; ++i) {
+  		for (j = 0; j < n; ++j) {
+  			res[i][j] = 0;
+   		}
   	}
 	struct Graph graph;
 	int *switches = tpg.switches_ptr;
@@ -80,7 +85,6 @@ int** dijkstra(Tpg tpg) {
 	    width[src] = INT_MAX;
 	    int count;
 	    int prev[n];
-	    res[src][src] = 0;
 	    for (count = 0; count < n; ++count) {
 			//printf("in\n");
 			// Pick the minimum distance vertex from the set of vertices not
@@ -116,7 +120,6 @@ int** dijkstra(Tpg tpg) {
 
     		}
   	}
-	int j;
 	for (i = 0; i < n; i++) {
     	for (j = 0; j < n; j++) {
         	printf("%d ", res[i][j]);
