@@ -39,11 +39,11 @@ int** dijkstra(Tpg tpg) {
 	for (i = 0; i < n; ++i){
     	nodeptr[i]->next = graph.adj_edge+i;
   	}
-	printf("please\n");
+	//printf("please\n");
 	for (i = 0; i < tpg.edge_num; ++i) {
 	    int node1 = tpg.edge[i].node1 - 1;
 	    int node2 = tpg.edge[i].node2 - 1;
-	    printf("node2 = %d", node2);
+	    //printf("node2 = %d", node2);
 	    int bandwidth = tpg.edge[i].bandwidth;
 	    int active = tpg.edge[i].active;
 	    printf("switches %d %d %d\n", switches[node1], switches[node2], active);
@@ -76,7 +76,7 @@ int** dijkstra(Tpg tpg) {
 	}*/
 	int src;
 	for (src = 0; src < n; ++src) {
-	    printf("scr = %d\n", src);
+	    //printf("scr = %d\n", src);
 	    if (!switches[src]) continue;
 	    int width[n];
 	    int sptSet[n];
@@ -115,7 +115,7 @@ int** dijkstra(Tpg tpg) {
 		        //if (ptr == NULL) printf("GG\n");
 		        //printf("no\n");
       		}
-			printf("width = %d %d %d\n", width[0],width[1],width[2]);
+			//printf("width = %d %d %d\n", width[0],width[1],width[2]);
 			//printf("what\n");
 
     		}
@@ -135,12 +135,12 @@ int** dijkstra(Tpg tpg) {
 			ptr = nodeptr[i];
 			nodeptr[i] = nodeptr[i]->next;
 			//printf("noteptr[i] = %d\n", nodeptr[i]->id);
-			printf("1\n");
+			//printf("1\n");
 			free(ptr);
-			printf("2\n");
+			//printf("2\n");
     	}
   	}	
   	free(graph.adj_edge);
-	printf("3\n");
+	//printf("3\n");
   	return res;
 }

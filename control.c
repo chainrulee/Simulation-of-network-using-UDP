@@ -116,7 +116,7 @@ void control_process(Tpg tpg) {
     struct sigevent evp;
     memset(&evp, 0, sizeof(struct sigevent));   //清零初始化
 
-    evp.sigev_value.sival_int = 1;        //也是标识定时器的，这和timerid有什么区别？回调函数可以获得
+    //evp.sigev_value.sival_int = 1;        //也是标识定时器的，这和timerid有什么区别？回调函数可以获得
     evp.sigev_notify = SIGEV_THREAD;        //线程通知的方式，派驻新线程
     evp.sigev_notify_function = timer_thread;   //线程函数地址
 
@@ -146,6 +146,7 @@ void control_process(Tpg tpg) {
                             id = buf[1]-1;
                             *(tpg.switches_ptr+id) = 1;
                             port[id] = remaddr.sin_port;
+                            printf("switch %d has port %d\n", id+1, port[id]);
                             buf[0] = REGISTER_RESPONSE;
                             ptr = adj_edge+id;
                             i = 3;
@@ -153,11 +154,13 @@ void control_process(Tpg tpg) {
                             int mask1 = 0xFF00;
                             int mask2 = 0xFF;
                             while (ptr != NULL) {
-                                buf[i++] = ptr->id;
+                                buf[i++] = ptr->id + 1;
 								printf("found neighbor id = %d\n", ptr->id);
                                 buf[i++] = *(tpg.switches_ptr+ptr->id);
                                 buf[i++] = port[ptr->id] & mask1;
+                                printf("port first part = %c\n", buf[i-1]);
                                 buf[i++] = port[ptr->id] & mask2;
+                                printf("port sencond part = %c\n", buf[i-1]);
                                 ptr = ptr->next;
                                 ++cnt;
                             }
@@ -166,24 +169,11 @@ void control_process(Tpg tpg) {
                             //===== send to response to client =====//
                             if (sendto(fd, buf, strlen(buf), 0, (struct sockaddr *)&remaddr, slen)==-1)
                                 perror("REGISTER_RESPONSE");
-			    			timerid[id] = (timer_t *)malloc(sizeof(timer_t));
-                            //Set timer to monitor TPG_UPDATE
-                            evp.sigev_value.sival_int = id;
-                            if (timer_create(CLOCKID, &evp, timerid[id]) == -1)
-                            {
-                                perror("fail to timer_create");
-                                exit(-1);
-                            }
-                            if (timer_settime(*timerid[id], 0, &it, NULL) == -1)
-                            {
-                                perror("fail to timer_settime");
-                                exit(-1);
-                            }
 
                             //NOW WE HAVE TO SEND ROUTER UPDATE TO EVERY OTHER SWITCHES
                             printf("Sending ROUTER_UPDATE\n");
                             nextHop = dijkstra(tpg);
-                            printf("what about here\n");
+                            //printf("what about here\n");
                             buf[0] = ROUTER_UPDATE;
                             for (i = 0; i < n; i++) {
                                 if (*(tpg.switches_ptr+id) == 1) {
@@ -195,8 +185,21 @@ void control_process(Tpg tpg) {
                                         perror("ROUTER_UPDATE");
                                 }
                             }
-                            printf("I am here\n");
+                            //printf("I am here\n");
                             kill(getpid(), SIGKILL);
+                        }
+                        timerid[id] = (timer_t *)malloc(sizeof(timer_t));
+                        //Set timer to monitor TPG_UPDATE
+                        evp.sigev_value.sival_int = id;
+                        if (timer_create(CLOCKID, &evp, timerid[id]) == -1)
+                        {
+                            perror("fail to timer_create");
+                            exit(-1);
+                        }
+                        if (timer_settime(*timerid[id], 0, &it, NULL) == -1)
+                        {
+                            perror("fail to timer_settime");
+                            exit(-1);
                         }
                         break;
                     case TPG_UPDATE:
