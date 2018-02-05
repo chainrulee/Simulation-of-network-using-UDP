@@ -12,6 +12,7 @@
 #include "dijkstra.h"
 #include <signal.h>
 #define DEBUG 0
+#define CLOCKID CLOCK_REALTIME
 
 node_t* assignAdjEdge(Tpg tpg) {
     int n = tpg.switch_num;
@@ -55,6 +56,11 @@ node_t* assignAdjEdge(Tpg tpg) {
         }
     }
     return graph.adj_edge;
+}
+
+void timer_thread(union sigval v)
+{
+    printf("timer_thread function! %d\n", v.sival_int);
 }
 
 void control_process(Tpg tpg) {
@@ -106,6 +112,22 @@ void control_process(Tpg tpg) {
     int** nextHop;
     pid_t pid;
 
+    //timer 
+    timer_t *timerid[n];
+    //timer_t *timerid = (timer_t *)malloc(n * sizeof(timer_t));
+    struct sigevent evp;
+    memset(&evp, 0, sizeof(struct sigevent));   //清零初始化
+
+    evp.sigev_value.sival_int = 1;        //也是标识定时器的，这和timerid有什么区别？回调函数可以获得
+    evp.sigev_notify = SIGEV_THREAD;        //线程通知的方式，派驻新线程
+    evp.sigev_notify_function = timer_thread;   //线程函数地址
+
+    struct itimerspec it;
+    it.it_interval.tv_sec = 5;  //间隔1s
+    it.it_interval.tv_nsec = 0;
+    it.it_value.tv_sec = 5;     
+    it.it_value.tv_nsec = 0;
+
     /* now loop, receiving data and printing what we received */
     while (1) {
         printf("waiting on port %d\n", SERVICE_PORT);
@@ -145,6 +167,20 @@ void control_process(Tpg tpg) {
                             //===== send to response to client =====//
                             if (sendto(fd, buf, strlen(buf), 0, (struct sockaddr *)&remaddr, slen)==-1)
                                 perror("REGISTER_RESPONSE");
+			    timerid[id] = (timer_t *)malloc(sizeof(timer_t));
+                            //Set timer to monitor TPG_UPDATE
+                            evp.sigev_value.sival_int = id;
+                            if (timer_create(CLOCKID, &evp, timerid[id]) == -1)
+                            {
+                                perror("fail to timer_create");
+                                exit(-1);
+                            }
+                            if (timer_settime(*timerid[id], 0, &it, NULL) == -1)
+                            {
+                                perror("fail to timer_settime");
+                                exit(-1);
+                            }
+
                             //NOW WE HAVE TO SEND ROUTER UPDATE TO EVERY OTHER SWITCHES
                             printf("Sending ROUTER_UPDATE\n");
                             nextHop = dijkstra(tpg);
@@ -159,6 +195,7 @@ void control_process(Tpg tpg) {
                                         perror("ROUTER_UPDATE");
                                 }
                             }
+
                             kill(getpid(), SIGKILL);
                         }
                         break;
