@@ -168,7 +168,7 @@ void control_process(Tpg tpg) {
                             buf[1] = n;
                             buf[2] = cnt;
                             //===== send to response to client =====//
-                            if (sendto(fd, buf, BUFSIZE, 0, (struct sockaddr *)&remaddr, slen)==-1)
+                            if (sendto(fd, buf, 3+4*cnt, 0, (struct sockaddr *)&remaddr, slen)==-1)
                                 perror("REGISTER_RESPONSE");
 
                             //NOW WE HAVE TO SEND ROUTER UPDATE TO EVERY OTHER SWITCHES
@@ -183,7 +183,7 @@ void control_process(Tpg tpg) {
                                         buf[3*j+1] = nextHop[i][j];                                
                                     }
                                     remaddr.sin_port = port[i];
-                                    if (sendto(fd, buf, BUFSIZE, 0, (struct sockaddr *)&remaddr, slen)==-1)
+                                    if (sendto(fd, buf, strlen(buf), 0, (struct sockaddr *)&remaddr, slen)==-1)
                                         perror("ROUTER_UPDATE");
                                 }
                             }
@@ -251,7 +251,7 @@ void control_process(Tpg tpg) {
                                             buf[3*j+1] = nextHop[i][j];                                
                                         }
                                         remaddr.sin_port = port[i];
-                                        if (sendto(fd, buf, BUFSIZE, 0, (struct sockaddr *)&remaddr, slen)==-1)
+                                        if (sendto(fd, buf, strlen(buf), 0, (struct sockaddr *)&remaddr, slen)==-1)
                                             perror("ROUTER_UPDATE");
                                     }
                                 }
