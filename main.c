@@ -40,7 +40,7 @@ int main (int argc, char **argv) {
 		printf("Fail to get switch numbers from topology file! \n");
 		exit(1);
 	}
-	PNid *table = (PNid*) malloc(node_num* sizeof(PNid));
+	PNid *table = (PNid*) malloc((node_num+1)* sizeof(PNid));
 	int i;
 	for (i = 0; i < node_num; ++i) {
 		table[i].pid = -1;

@@ -1,5 +1,7 @@
 #ifndef STRUCTURE_H
 #define STRUCTURE_H
+#include <time.h>
+#include <signal.h>
 
 #define SERVICE_PORT 21234
 #define REGISTER_REQUEST 246 
@@ -9,6 +11,7 @@
 #define ROUTER_UPDATE     64
 #define KEEP_ALIVE        65
 #define BUFSIZE           2048
+#define K_SEC                5
 
 typedef struct edge {
 	int node1;
@@ -18,7 +21,6 @@ typedef struct edge {
 	int active;
 	
 } Edge;
-
 
 typedef struct topology {
 	Edge *edge;
@@ -33,4 +35,13 @@ typedef struct pair_pid_nid {
 	int active;
 	int pipe_fd_p[2];
 } PNid;
+
+typedef struct neighbor_info {
+    int nid;
+    int active;
+    unsigned int port;
+	char* hostname;
+	timer_t* timerid;
+} Nbor;
+
 #endif
