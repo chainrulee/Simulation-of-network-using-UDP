@@ -154,8 +154,9 @@ void control_process(Tpg tpg) {
                             int mask1 = 0xFF00;
                             int mask2 = 0xFF;
                             while (ptr != NULL) {
+                                printf("i = %d\n", i);
                                 buf[i++] = ptr->id + 1;
-								printf("found neighbor id = %d\n", ptr->id);
+								printf("found neighbor id = %d\n", ptr->id + 1);
                                 buf[i++] = *(tpg.switches_ptr+ptr->id);
                                 buf[i++] = port[ptr->id] & mask1;
                                 printf("port first part = %c\n", buf[i-1]);
@@ -176,7 +177,8 @@ void control_process(Tpg tpg) {
                             //printf("what about here\n");
                             buf[0] = ROUTER_UPDATE;
                             for (i = 0; i < n; i++) {
-                                if (*(tpg.switches_ptr+id) == 1) {
+                                if (*(tpg.switches_ptr+i) == 1) {
+                                    //printf("Sending ROUTER_UPDATE to switch %d\n", i+1);
                                     for (j = 0; j < n; j++) {
                                         buf[3*j+1] = nextHop[i][j];                                
                                     }
