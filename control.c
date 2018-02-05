@@ -33,27 +33,25 @@ node_t* assignAdjEdge(Tpg tpg) {
         int node2 = tpg.edge[i].node2 - 1;
         int bandwidth = tpg.edge[i].bandwidth;
         int active = tpg.edge[i].active;
-        if (switches[node1] && switches[node2] && active) {
-            //printf("why\n");
-            if (nodeptr[node1]->next == NULL) nodeptr[node1]->next = (node_t *)malloc(sizeof(node_t));
-            //tmp = nodeptr+node1;
-            //tmp = tmp->next;
-            //printf("why\n");
-            nodeptr[node1] = nodeptr[node1]->next;
-            //printf("why\n");
-            nodeptr[node1]->id = node2;
-            //printf("node1->id = %d\n", graph.adj_edge->id);
-            //printf("why\n");
-            nodeptr[node1]->bandwidth =  bandwidth;
-            nodeptr[node1]->next = NULL;
-            if (nodeptr[node2]->next == NULL) nodeptr[node2]->next = (node_t *)malloc(sizeof(node_t));
-            //tmp = nodeptr+node2;
-            //tmp = tmp->next;
-            nodeptr[node2] = nodeptr[node2]->next;
-            nodeptr[node2]->id = node1;
-            nodeptr[node2]->bandwidth =  bandwidth;
-            nodeptr[node2]->next = NULL;
-        }
+        //printf("in\n");
+        if (nodeptr[node1]->next == NULL) nodeptr[node1]->next = (node_t *)malloc(sizeof(node_t));
+        //tmp = nodeptr+node1;
+        //tmp = tmp->next;
+        //printf("why\n");
+        nodeptr[node1] = nodeptr[node1]->next;
+        //printf("why\n");
+        nodeptr[node1]->id = node2;
+        //printf("node1->id = %d\n", graph.adj_edge->id);
+        //printf("why\n");
+        nodeptr[node1]->bandwidth =  bandwidth;
+        nodeptr[node1]->next = NULL;
+        if (nodeptr[node2]->next == NULL) nodeptr[node2]->next = (node_t *)malloc(sizeof(node_t));
+        //tmp = nodeptr+node2;
+        //tmp = tmp->next;
+        nodeptr[node2] = nodeptr[node2]->next;
+        nodeptr[node2]->id = node1;
+        nodeptr[node2]->bandwidth =  bandwidth;
+        nodeptr[node2]->next = NULL;
     }
     return graph.adj_edge;
 }
@@ -78,7 +76,7 @@ void control_process(Tpg tpg) {
     int alive[n][n];
     for (i = 0; i < n; ++i) {
         for (j = 0; j < n; ++j) {
-            alive[i][j] = 1;
+            alive[i][j] = 0;
         }
     }
 
@@ -156,6 +154,7 @@ void control_process(Tpg tpg) {
                             int mask2 = 0xFF;
                             while (ptr != NULL) {
                                 buf[i++] = ptr->id;
+								printf("found neighbor id = %d\n", ptr->id);
                                 buf[i++] = *(tpg.switches_ptr+ptr->id);
                                 buf[i++] = port[ptr->id] & mask1;
                                 buf[i++] = port[ptr->id] & mask2;
@@ -167,7 +166,7 @@ void control_process(Tpg tpg) {
                             //===== send to response to client =====//
                             if (sendto(fd, buf, strlen(buf), 0, (struct sockaddr *)&remaddr, slen)==-1)
                                 perror("REGISTER_RESPONSE");
-			    timerid[id] = (timer_t *)malloc(sizeof(timer_t));
+			    			timerid[id] = (timer_t *)malloc(sizeof(timer_t));
                             //Set timer to monitor TPG_UPDATE
                             evp.sigev_value.sival_int = id;
                             if (timer_create(CLOCKID, &evp, timerid[id]) == -1)
@@ -184,6 +183,7 @@ void control_process(Tpg tpg) {
                             //NOW WE HAVE TO SEND ROUTER UPDATE TO EVERY OTHER SWITCHES
                             printf("Sending ROUTER_UPDATE\n");
                             nextHop = dijkstra(tpg);
+                            printf("what about here\n");
                             buf[0] = ROUTER_UPDATE;
                             for (i = 0; i < n; i++) {
                                 if (*(tpg.switches_ptr+id) == 1) {
@@ -195,7 +195,7 @@ void control_process(Tpg tpg) {
                                         perror("ROUTER_UPDATE");
                                 }
                             }
-
+                            printf("I am here\n");
                             kill(getpid(), SIGKILL);
                         }
                         break;
@@ -237,7 +237,7 @@ void control_process(Tpg tpg) {
                                 ptr = ptr->next;
                             }
                             if (isChange) {
-                                printf("Sending ROUTER_UPDATE\n");
+                                printf("Sending ROUTER_UPDATE because of link failure\n");
                                 nextHop = dijkstra(tpg);
                                 buf[0] = ROUTER_UPDATE;
                                 for (i = 0; i < n; i++) {

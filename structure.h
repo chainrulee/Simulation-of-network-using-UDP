@@ -3,7 +3,7 @@
 #include <time.h>
 #include <signal.h>
 
-#define SERVICE_PORT 21234
+#define SERVICE_PORT 21233
 #define REGISTER_REQUEST 246 
 #define REGISTER_RESPONSE 61
 #define KILL_SWITCH       62

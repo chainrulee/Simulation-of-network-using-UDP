@@ -129,14 +129,18 @@ int** dijkstra(Tpg tpg) {
 
   	for (i = 0; i < n; i++) {
 	    nodeptr[i] = graph.adj_edge+i;
+	    if (nodeptr[i]->next != NULL) continue;
 	    nodeptr[i] = nodeptr[i]->next;
 	    while(nodeptr[i] != NULL) {
 			ptr = nodeptr[i];
 			nodeptr[i] = nodeptr[i]->next;
 			//printf("noteptr[i] = %d\n", nodeptr[i]->id);
+			printf("1\n");
 			free(ptr);
+			printf("2\n");
     	}
-  	}
+  	}	
   	free(graph.adj_edge);
+	printf("3\n");
   	return res;
 }
