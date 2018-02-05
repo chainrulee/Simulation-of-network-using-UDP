@@ -77,7 +77,7 @@ int** dijkstra(Tpg tpg) {
 	int src;
 	for (src = 0; src < n; ++src) {
 	    printf("scr = %d\n", src);
-	    if (!switches[src]) ++src;
+	    if (!switches[src]) continue;
 	    int width[n];
 	    int sptSet[n];
 	    for (i = 0; i < n; ++i)
