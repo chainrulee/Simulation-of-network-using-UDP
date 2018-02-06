@@ -64,16 +64,16 @@ int main (int argc, char **argv) {
 
 		if (FD_ISSET(0, &rfds)) {
 			char whole_cmd [256] = {' '};
-			char *cmd [6];
+			char *cmd [7];
 			fgets(whole_cmd, 256, stdin);
 			cmd[0] = strtok(whole_cmd, " \n");
 
 			int i;
-			for (i = 1; cmd[i-1] != NULL && i < 6; ++i) {
+			for (i = 1; cmd[i-1] != NULL && i < 7; ++i) {
 				cmd[i] = strtok(NULL, " \n");
 			}
-			if (i < 6) {
-				printf("Error! numbers of argument: %d, not enought, please enter again. \n", i);
+			if (i < 5) {
+				printf("<-Main->  Error! numbers of argument: %d, not enought, please enter again. \n", i);
 				continue;
 			}
 /*
@@ -81,12 +81,30 @@ int main (int argc, char **argv) {
 			int port = atoi(cmd[3]);
 */
 			int nid = atoi(cmd[1]);
+			if (nid == 0) {
+				
+				continue;
+            }
 			if (strcmp(cmd[4], "-f") == 0) { // equal
-				if (table[nid].active == 0)
+				if (table[nid].active == 0
+				  || cmd[5] == NULL
+				  || cmd[6] == NULL) {
+					printf("<-Main->  Error! The number of Link cmd is wrong, please type again. \n");
 					continue;
+				}
+				LinkCmd link_cmd;
+				link_cmd.nid = atoi(cmd[5]);
+				if (strcmp(cmd[6], "-e") == 0) { //enable link
+				    link_cmd.link_fail = 0;
+                } else if (strcmp(cmd[6], "-d") == 0) { //disable link
+				    link_cmd.link_fail = 1;
+				} else {
+					printf("<-Main->  Error! Link cmd is wrong, please type again. \n");
+					continue;
+				}
 
 				int *pipe_fd = table[nid].pipe_fd_p;
-				write(pipe_fd[1], &nid, sizeof(int));
+				write(pipe_fd[1], &link_cmd, sizeof(LinkCmd));
 
 			} else {
 				if (strcmp(cmd[4], "-s") == 0) {

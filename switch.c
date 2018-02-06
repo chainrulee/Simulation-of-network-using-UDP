@@ -29,7 +29,7 @@ void process_keep_alive(char buf[]);
 void periodic_tpg_update_thread(union sigval v);
 void periodic_send_keep_alive(union sigval v) ;
 
-volatile static int linkk;
+
 volatile fd_set rfds;
 volatile struct timeval tv;
 volatile int retval;
@@ -111,8 +111,15 @@ int main(int argc, char **argv)
 		FD_SET(STDIN_FILENO, &rfds);
 		retval = select(fd+1, &rfds, NULL, NULL, NULL);
 		if (FD_ISSET(STDIN_FILENO, &rfds)) {
-		    read(STDIN_FILENO, &linkk, sizeof(int));
-		    printf("<-Switch->  children's pthread, got number: %d \n", linkk);
+			LinkCmd link_cmd;
+		    read(STDIN_FILENO, &link_cmd, sizeof(LinkCmd));
+		    printf("<-Switch-> Recieve link cmd. id: %d, fail status: %d \n", link_cmd.nid, link_cmd.link_fail);
+			for (i = 0; i < neighbor_number; ++i) {
+			    if (neighbors[i].nid = link_cmd.nid) {
+				    neighbors[i].link_fail = link_cmd.link_fail;
+				}
+			}
+
 		} else if (FD_ISSET(fd, &rfds)) {
 		    recvlen = recvfrom(fd, rcv_buf, BUFSIZE, 0, (struct sockaddr *)&remaddr, &addrlen);
 			printf("<-Switch->  Recieve buf[0] is %d \n", rcv_buf[0]);
@@ -173,7 +180,8 @@ void process_keep_alive(char buf[]) {
 void process_router_update(char buf[]) {
     int i;
 	// buf[0]: ROUTER_UPDATE
-	// buf[1]: neibor id
+	// buf[1]: neibor id1
+	// buf[2]: neibor id2
 	// ...
 	for (i = 1; i <= total_number; ++i) {
 	    next_hop[i].nid = buf[i];
@@ -191,6 +199,7 @@ void process_response(char buf[]) {
 		neighbors[i].nid = buf[3+4*i];
 		neighbors[i].active = buf[3+4*i+1];
 		neighbors[i].port = (buf[3+4*i+2] << 8) | buf[3+4*i+3];
+		neighbors[i].link_fail = 0;
 		printf("<-Switch->  3+4*i: %d, nid: %d, active: %d, port: %d \n", 3+4*i, buf[3+4*i], neighbors[i].active, neighbors[i].port);
 		timer_t* monitor_timerid = neighbors[i].monitor_timerid= (timer_t*) malloc(sizeof(timer_t));
 		timer_t* send_alive_timerid = neighbors[i].send_alive_timerid= (timer_t*) malloc(sizeof(timer_t));

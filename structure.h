@@ -43,6 +43,13 @@ typedef struct neighbor_info {
 	char* hostname;
 	timer_t* monitor_timerid;
 	timer_t* send_alive_timerid;
+	int link_fail;
 } Nbor;
+
+typedef struct link_cmd {
+	int nid;
+	int active;
+	int link_fail;
+} LinkCmd;
 
 #endif
