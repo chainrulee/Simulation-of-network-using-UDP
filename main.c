@@ -128,7 +128,7 @@ int main (int argc, char **argv) {
 			}
 //			printf("Retval: %d; Data is available now: %c %c %d %d \n",retval,ch1,ch2,tv.tv_sec,tv.tv_usec);
 		} else {
-			printf("Retval: %d; No data within five seconds.\n",retval);
+		//	printf("Retval: %d; No data within five seconds.\n",retval);
 		}
 	}
 	for (i = 0; i < node_num; ++i)

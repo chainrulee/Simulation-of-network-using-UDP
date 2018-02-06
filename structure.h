@@ -41,7 +41,8 @@ typedef struct neighbor_info {
     int active;
     unsigned int port;
 	char* hostname;
-	timer_t* timerid;
+	timer_t* monitor_timerid;
+	timer_t* send_alive_timerid;
 } Nbor;
 
 #endif

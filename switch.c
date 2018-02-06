@@ -86,7 +86,7 @@ int main(int argc, char **argv)
 		exit(1);
 	}
 	//========================================================//
-	printf("<-Switch->  Sending packet %d to %s port %d\n", i, server, SERVICE_PORT);
+	printf("<-Switch->  self_id: %d, Sending packet to %s from port %d\n", self_id, server, myaddr.sin_port);
     pid_t send;
 	if (send = fork() == 0) {
 		char buf[BUFSIZE];
@@ -139,6 +139,7 @@ int main(int argc, char **argv)
 }
 
 void process_keep_alive(char buf[]) {
+	printf("<-Switch->  @ %s, from nid: %d  \n", __FUNCTION__, buf[1]);
     int nid = buf[1];
 	int i, idx = -1;
 	for (i = 0; i < neighbor_number; ++i) {
@@ -148,21 +149,21 @@ void process_keep_alive(char buf[]) {
 		}
 	}
 	if (idx < 0) {
-	    printf("<-Switch->  idx: %d < 0, error! \n");
+	    printf("<-Switch->  idx: %d < 0, error! \n", idx);
 		return;
 	}
 	if (neighbors[idx].active == 0) {
 	    // send TPG_UPDATE pkt
 	} else {
 	    //=== reset the timer ===//
-	    timer_t* timerid = neighbors[idx].timerid;
+	    timer_t* monitor_timerid = neighbors[idx].monitor_timerid;
 	    struct itimerspec it;
 	    it.it_interval.tv_sec = 6;	//间隔6s
         it.it_interval.tv_nsec = 0;
         it.it_value.tv_sec = 6;		
         it.it_value.tv_nsec = 0;
 
-	    if (timer_settime(*timerid, 0, &it, NULL) == -1) {
+	    if (timer_settime(*monitor_timerid, 0, &it, NULL) == -1) {
 		    perror("fail to timer_settime");
 		    exit(-1);
 	    }
@@ -191,7 +192,8 @@ void process_response(char buf[]) {
 		neighbors[i].active = buf[3+4*i+1];
 		neighbors[i].port = (buf[3+4*i+2] << 8) | buf[3+4*i+3];
 		printf("<-Switch->  3+4*i: %d, nid: %d, active: %d, port: %d \n", 3+4*i, buf[3+4*i], neighbors[i].active, neighbors[i].port);
-		timer_t* timerid = neighbors[i].timerid= (timer_t*) malloc(sizeof(timer_t));
+		timer_t* monitor_timerid = neighbors[i].monitor_timerid= (timer_t*) malloc(sizeof(timer_t));
+		timer_t* send_alive_timerid = neighbors[i].send_alive_timerid= (timer_t*) malloc(sizeof(timer_t));
 		tpg_timerid = (timer_t*) malloc(sizeof(timer_t));
 		//=== Setup timer for monitoring KEEP_ALIVE ===//
 		struct sigevent evp;
@@ -200,9 +202,9 @@ void process_response(char buf[]) {
 	    evp.sigev_value.sival_int = neighbors[i].nid;
 	    evp.sigev_notify = SIGEV_THREAD;
 
-	    //=== timeout timer ===//
+	    //=== monitor KEEP_ALIVE timeout timer ===//
 		evp.sigev_notify_function = timer_thread;
-	    if (timer_create(CLOCKID, &evp, timerid) == -1) {
+	    if (timer_create(CLOCKID, &evp, monitor_timerid) == -1) {
 		    perror("fail to timer_create");
 		    exit(-1);
 	    }
@@ -214,24 +216,40 @@ void process_response(char buf[]) {
 		    exit(-1);
 	    }
 
+		//=== Send keep_alive ===//
+		evp.sigev_notify_function = periodic_send_keep_alive;
+	    if (timer_create(CLOCKID, &evp, send_alive_timerid) == -1) {
+		    perror("fail to timer_create");
+		    exit(-1);
+	    }
 		
 	    struct itimerspec it;
 	    it.it_interval.tv_nsec = 0;		
-	    it.it_value.tv_nsec = 0;
-
-	    it.it_value.tv_sec =  6;
-		it.it_interval.tv_sec = 6;
-	    if (timer_settime(*timerid, 0, &it, NULL) == -1) {
+	    it.it_value.tv_nsec = 1;
+        //=== send keep_alive timer enable ===//
+		it.it_value.tv_sec =  0;
+		it.it_interval.tv_sec = 3;
+	    if (timer_settime(*send_alive_timerid, 0, &it, NULL) == -1) {
 		    perror("fail to timer_settime");
 		    exit(-1);
 	    }
-
+		//=== tpg timer enable ===//
+		it.it_value.tv_nsec = 1;
+		it.it_value.tv_sec = 0;
 		it.it_interval.tv_sec = 3;	//间隔3s
-        it.it_value.tv_sec = 3;
 		if (timer_settime(*tpg_timerid, 0, &it, NULL) == -1) {
 		    perror("fail to timer_settime");
 		    exit(-1);
 	    }
+        //=== monitor keep_alive timer enable ===//
+        if (neighbors[i].active == 1) {
+	        it.it_value.tv_sec =  6;
+		    it.it_interval.tv_sec = 6;
+	        if (timer_settime(*monitor_timerid, 0, &it, NULL) == -1) {
+		        perror("fail to timer_settime");
+		        exit(-1);
+	        }
+        }
 	}
 }
 
@@ -245,8 +263,9 @@ void periodic_send_keep_alive(union sigval v) {
 	int i;
 	for (i = 0; i < neighbor_number; ++i) {
         remaddr_l.sin_port = neighbors[i].port;
+		printf("<-Switch->  self_id: %d, send to nid: %d, %s() \n", self_id, neighbors[i].nid, __FUNCTION__);
         if (sendto(fd, buf, BUFSIZE, 0, (struct sockaddr *)&remaddr_l, addrlen)==-1) {
-            printf("<-Switch->  sendto, %s()", __FUNCTION__);
+            printf("<-Switch->  self_id: %d, sendto nid: %d fail!!!!!!!!!!, %s() \n", self_id, neighbors[i].nid, __FUNCTION__);
 	    }
 	}	
 }
@@ -304,14 +323,14 @@ void timer_thread(union sigval v)
             perror("sendto");
 	}
 	//=== disable the timer ===//
-	timer_t* timerid = neighbors[idx].timerid;
+	timer_t* monitor_timerid = neighbors[idx].monitor_timerid;
 	struct itimerspec it;
 	it.it_interval.tv_sec = 0;	//间隔5s
 	it.it_interval.tv_nsec = 0;
 	it.it_value.tv_sec = 0;		
 	it.it_value.tv_nsec = 0;
 
-	if (timer_settime(*timerid, 0, &it, NULL) == -1)
+	if (timer_settime(*monitor_timerid, 0, &it, NULL) == -1)
 	{
 		perror("fail to timer_settime");
 		exit(-1);
