@@ -14,8 +14,23 @@
 #define DEBUG 0
 #define CLOCKID CLOCK_REALTIME
 
+//Global Variable
+Tpg tpg;
+timer_t **timerid;
+struct sigevent evp;
+struct itimerspec it;
+unsigned char buf[BUFSIZE]; /* receive buffer */
+int** nextHop;
+int *port;
+struct sockaddr_in remaddr; /* remote address */
+int slen=sizeof(remaddr);
+int n;
+int fd;             /* our socket */
+
 node_t* assignAdjEdge(Tpg tpg) {
-    int n = tpg.switch_num;
+    n = tpg.switch_num;
+    port = (int *)malloc(sizeof(int)*n);
+    timerid = (timer_t **)malloc(sizeof(timer_t *)*n);
     node_t *nodeptr[n];
     node_t tmp[n];
     int i;
@@ -56,22 +71,41 @@ node_t* assignAdjEdge(Tpg tpg) {
     return graph.adj_edge;
 }
 
+
 void timer_thread(union sigval v)
 {
+    int i,j;
     printf("timer_thread function! %d\n", v.sival_int);
+    evp.sigev_value.sival_int = v.sival_int;
+    it.it_interval.tv_sec = 5;  //间隔5s
+    it.it_value.tv_sec = 5;
+    if (timer_settime(*timerid[v.sival_int], 0, &it, NULL) == -1)
+    {
+        perror("fail to timer_settime");
+        exit(-1);
+    }
+    printf("Sending ROUTER_UPDATE\n");
+    nextHop = dijkstra(tpg);
+    //printf("what about here\n");
+    buf[0] = ROUTER_UPDATE;
+    for (i = 0; i < n; i++) {
+        if (*(tpg.switches_ptr+i) == 1) {
+            //printf("Sending ROUTER_UPDATE to switch %d\n", i+1);
+            for (j = 0; j < n; j++) {
+                buf[j+1] = nextHop[i][j];                                
+            }
+            remaddr.sin_port = *(port+i);
+            if (sendto(fd, buf, strlen(buf), 0, (struct sockaddr *)&remaddr, slen)==-1)
+                perror("ROUTER_UPDATE");
+        }
+    }
 }
 
-void control_process(Tpg tpg) {
+void control_process() {
     struct sockaddr_in myaddr;  /* our address */
-    struct sockaddr_in remaddr; /* remote address */
     socklen_t addrlen = sizeof(remaddr);        /* length of addresses */
     int recvlen;            /* # bytes received */
-    int fd;             /* our socket */
-    unsigned char buf[BUFSIZE]; /* receive buffer */
-    int slen=sizeof(remaddr);
-    int n = tpg.switch_num;
     node_t *ptr;
-    int port[n];
     int i, j, id;
     int alive[n][n];
     for (i = 0; i < n; ++i) {
@@ -107,23 +141,16 @@ void control_process(Tpg tpg) {
     //create a map to adjacent edges
     node_t* adj_edge = assignAdjEdge(tpg);
     //create a table for storing next hops
-    int** nextHop;
     pid_t pid;
 
     //timer 
-    timer_t *timerid[n];
-    //timer_t *timerid = (timer_t *)malloc(n * sizeof(timer_t));
-    struct sigevent evp;
     memset(&evp, 0, sizeof(struct sigevent));   //清零初始化
 
     //evp.sigev_value.sival_int = 1;        //也是标识定时器的，这和timerid有什么区别？回调函数可以获得
     evp.sigev_notify = SIGEV_THREAD;        //线程通知的方式，派驻新线程
     evp.sigev_notify_function = timer_thread;   //线程函数地址
 
-    struct itimerspec it;
-    it.it_interval.tv_sec = 5;  //间隔1s
     it.it_interval.tv_nsec = 0;
-    it.it_value.tv_sec = 5;     
     it.it_value.tv_nsec = 0;
 
     /* now loop, receiving data and printing what we received */
@@ -143,8 +170,8 @@ void control_process(Tpg tpg) {
                         printf("Received REGISTER_REQUEST from %d\n", buf[1]);
                         id = buf[1]-1;
                         *(tpg.switches_ptr+id) = 1;
-                        port[id] = remaddr.sin_port;
-                        printf("switch %d has port %d\n", id+1, port[id]);
+                        *(port+id) = remaddr.sin_port;
+                        printf("switch %d has port %d\n", id+1, *(port+id));
                         buf[0] = REGISTER_RESPONSE;
                         ptr = adj_edge+id;
                         i = 3;
@@ -156,10 +183,10 @@ void control_process(Tpg tpg) {
                             buf[i++] = ptr->id + 1;
                             printf("found neighbor id = %d\n", buf[i-1]);
                             buf[i++] = *(tpg.switches_ptr+ptr->id);
-                            printf("port[%d] = %d\n", ptr->id, port[ptr->id]);
-                            buf[i++] = port[ptr->id] >> 8;
+                            printf("port[%d] = %d\n", ptr->id, *(port+ptr->id));
+                            buf[i++] = *(port+ptr->id) >> 8;
                             printf("port first part = %d\n", buf[i-1]);
-                            buf[i++] = port[ptr->id] & mask2;
+                            buf[i++] = *(port+ptr->id) & mask2;
                             printf("port sencond part = %d\n", buf[i-1]);
                             ptr = ptr->next;
                             ++cnt;
@@ -182,7 +209,7 @@ void control_process(Tpg tpg) {
                                     for (j = 0; j < n; j++) {
                                         buf[j+1] = nextHop[i][j];                                
                                     }
-                                    remaddr.sin_port = port[i];
+                                    remaddr.sin_port = *(port+i);
                                     if (sendto(fd, buf, strlen(buf), 0, (struct sockaddr *)&remaddr, slen)==-1)
                                         perror("ROUTER_UPDATE");
                                 }
@@ -193,7 +220,9 @@ void control_process(Tpg tpg) {
                         }
                         timerid[id] = (timer_t *)malloc(sizeof(timer_t));
                         //Set timer to monitor TPG_UPDATE
-                        evp.sigev_value.sival_int = id;
+                        it.it_interval.tv_sec = 5;  //间隔5s
+                        it.it_value.tv_sec = 5;
+                        evp.sigev_value.sival_int = id;   
                         if (timer_create(CLOCKID, &evp, timerid[id]) == -1)
                         {
                             perror("fail to timer_create");
@@ -208,6 +237,14 @@ void control_process(Tpg tpg) {
                     case TPG_UPDATE:
                         printf("Received TPG_UPDATE from %d\n", buf[1]);
                         int id = buf[1] - 1;
+                        it.it_interval.tv_sec = 5;  //间隔5s
+                        it.it_value.tv_sec = 5;
+                        evp.sigev_value.sival_int = id;
+                        if (timer_settime(*timerid[id], 0, &it, NULL) == -1)
+                        {
+                            perror("fail to timer_settime");
+                            exit(-1);
+                        }
                         int change[n];
                         int isChange = 0;
                         for (i = 0; i < n; ++i) {
@@ -251,7 +288,7 @@ void control_process(Tpg tpg) {
                                         for (j = 0; j < n; j++) {
                                             buf[j+1] = nextHop[i][j];                                
                                         }
-                                        remaddr.sin_port = port[i];
+                                        remaddr.sin_port = *(port+i);
                                         if (sendto(fd, buf, strlen(buf), 0, (struct sockaddr *)&remaddr, slen)==-1)
                                             perror("ROUTER_UPDATE");
                                     }
@@ -262,7 +299,7 @@ void control_process(Tpg tpg) {
                         break;
                 }
             }
-        } else{
+        } else {
             printf("Retval: %d; No data within five seconds.\n",retval);
         }
     }
@@ -285,7 +322,6 @@ int main(int argc, char **argv) {
     FILE *fptr;
     char login_info[128];
     char *token;
-    Tpg tpg;
     
     if ((fptr = fopen(argv[1], "r")) == NULL) {
     printf("open_file_error");
@@ -365,7 +401,7 @@ int main(int argc, char **argv) {
 		cnt, tpg.edge[cnt].node1, (tpg.edge+cnt)->node2, (tpg.edge+cnt)->bandwidth, (tpg.edge+cnt)->delay, tpg.edge_num, tpg.switch_num);
     }
 #endif
-    control_process(tpg); 
+    control_process(); 
     free (tpg.edge);
     free (tpg.switches_ptr);
     return 0;
