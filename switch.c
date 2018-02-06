@@ -10,8 +10,7 @@
 #include "structure.h"
 #define CLOCKID CLOCK_REALTIME
 
-void timer_thread(union sigval v);
-
+/*
 // create the function to be executed as a thread
 void *thread(void *ptr)
 {
@@ -23,12 +22,14 @@ void *thread(void *ptr)
 
     return  ptr;
 }
+*/
+void timer_thread(union sigval v);
 void process_response(char buf[]);
 void process_router_update(char buf[]);
 void process_keep_alive(char buf[]);
 void periodic_tpg_update_thread(union sigval v);
 void periodic_send_keep_alive(union sigval v) ;
-
+void one_time_tpg_update();
 
 volatile fd_set rfds;
 volatile struct timeval tv;
@@ -101,9 +102,6 @@ int main(int argc, char **argv)
     } else if (send < 0) {
         printf("<-Switch->  Fork to Send REGISTER_REQUEST failed! \n");
 	}
-	
-	
-	// pthread_create(&thread1, NULL, *thread, (void *) thr);
     while (1) {
 		char rcv_buf[BUFSIZE];
 		FD_ZERO(&rfds);
@@ -119,7 +117,6 @@ int main(int argc, char **argv)
 				    neighbors[i].link_fail = link_cmd.link_fail;
 				}
 			}
-
 		} else if (FD_ISSET(fd, &rfds)) {
 		    recvlen = recvfrom(fd, rcv_buf, BUFSIZE, 0, (struct sockaddr *)&remaddr, &addrlen);
 			printf("<-Switch->  Recieve buf[0] is %d \n", rcv_buf[0]);
@@ -140,7 +137,6 @@ int main(int argc, char **argv)
 			
 			}
 		}
-        
      }
     return 0;
 }
@@ -159,8 +155,15 @@ void process_keep_alive(char buf[]) {
 	    printf("<-Switch->  idx: %d < 0, error! \n", idx);
 		return;
 	}
-	if (neighbors[idx].active == 0) {
+	int link_fail = neighbors[idx].link_fail;
+	if (link_fail == 1) {
+		printf("<-Switch->  neibor id: %d, link_fail: %d, do nothing when getting KEEP_ALIVR pkt. \n", nid, link_fail);
+		return;
+	}
+
+	if (neighbors[idx].active == 0 && neighbors[idx].link_fail == 0) {
 	    // send TPG_UPDATE pkt
+		one_time_tpg_update();
 	} else {
 	    //=== reset the timer ===//
 	    timer_t* monitor_timerid = neighbors[idx].monitor_timerid;
@@ -231,7 +234,7 @@ void process_response(char buf[]) {
 		    perror("fail to timer_create");
 		    exit(-1);
 	    }
-		
+
 	    struct itimerspec it;
 	    it.it_interval.tv_nsec = 0;		
 	    it.it_value.tv_nsec = 1;
@@ -271,6 +274,10 @@ void periodic_send_keep_alive(union sigval v) {
 	struct sockaddr_in remaddr_l = remaddr;
 	int i;
 	for (i = 0; i < neighbor_number; ++i) {
+		if (neighbors[i].link_fail == 1) {
+		    printf("<-Switch->  self_id: %d,  nid: %d, link_fail status: %d, Not send %s() \n", self_id, neighbors[i].nid, neighbors[i].link_fail, __FUNCTION__);
+		    continue;
+		}
         remaddr_l.sin_port = neighbors[i].port;
 		printf("<-Switch->  self_id: %d, send to nid: %d, %s() \n", self_id, neighbors[i].nid, __FUNCTION__);
         if (sendto(fd, buf, BUFSIZE, 0, (struct sockaddr *)&remaddr_l, addrlen)==-1) {
@@ -278,6 +285,30 @@ void periodic_send_keep_alive(union sigval v) {
 	    }
 	}	
 }
+
+void one_time_tpg_update() {
+    //=== send TPG update only one time when receiving pkt from previously inactive node. ===//
+	printf("<-Switch->  self_id: %d, @ %s \n", self_id, __FUNCTION__);
+    char buf[BUFSIZE];
+    buf[0] = TPG_UPDATE;
+	buf[1] = self_id;
+	socklen_t addrlen = sizeof(remaddr);
+
+	int i, j = 3, live_num = 0;
+	for (i = 0; i < neighbor_number; ++i) {
+	    if (neighbors[i].active == 1) {
+			buf[j++] = neighbors[i].nid;
+			++live_num;
+		}
+	}
+	buf[2] = live_num;
+	struct sockaddr_in remaddr_l = remaddr;
+	remaddr_l.sin_port = htons(SERVICE_PORT);
+    if (sendto(fd, buf, BUFSIZE, 0, (struct sockaddr *)&remaddr_l, addrlen)==-1) {
+        perror("sendto");
+	}
+}
+
 
 void periodic_tpg_update_thread(union sigval v) {
     //=== send TPG update periodically ===//
