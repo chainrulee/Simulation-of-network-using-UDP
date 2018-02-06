@@ -17,7 +17,7 @@ void *thread(void *ptr)
 {
     int type = (int) ptr;
 	 while (1) {
-        printf(" Main switch funciton \n");
+        printf("<-Switch->   Main switch funciton \n");
         sleep(5);
      }
 
@@ -54,13 +54,13 @@ int main(int argc, char **argv)
 	char *server = "127.0.0.1";
 	int i;
 	for (i = 0; i < argc; ++i) {
-		printf("argv[%d] is %s @%s \n", i, argv[i], __FUNCTION__);
+		printf("<-Switch->  argv[%d] is %s @%s \n", i, argv[i], __FUNCTION__);
 	}
 	self_id = atoi(argv[1]);
 	/* create a socket */
 
 	if ((fd=socket(AF_INET, SOCK_DGRAM, 0))==-1)
-		printf("socket created\n");
+		printf("<-Switch->  socket created\n");
 
 	/* bind it to all local addresses and pick any port number */
 
@@ -86,7 +86,7 @@ int main(int argc, char **argv)
 		exit(1);
 	}
 	//========================================================//
-	printf("Sending packet %d to %s port %d\n", i, server, SERVICE_PORT);
+	printf("<-Switch->  Sending packet %d to %s port %d\n", i, server, SERVICE_PORT);
     pid_t send;
 	if (send = fork() == 0) {
 		char buf[BUFSIZE];
@@ -99,7 +99,7 @@ int main(int argc, char **argv)
 	    }
 		exit(EXIT_SUCCESS);
     } else if (send < 0) {
-        printf("Fork to Send REGISTER_REQUEST failed! \n");
+        printf("<-Switch->  Fork to Send REGISTER_REQUEST failed! \n");
 	}
 	
 	
@@ -112,10 +112,10 @@ int main(int argc, char **argv)
 		retval = select(fd+1, &rfds, NULL, NULL, NULL);
 		if (FD_ISSET(STDIN_FILENO, &rfds)) {
 		    read(STDIN_FILENO, &linkk, sizeof(int));
-		    printf("children's pthread, got number: %d \n", linkk);
+		    printf("<-Switch->  children's pthread, got number: %d \n", linkk);
 		} else if (FD_ISSET(fd, &rfds)) {
 		    recvlen = recvfrom(fd, rcv_buf, BUFSIZE, 0, (struct sockaddr *)&remaddr, &addrlen);
-			printf("Recieve buf[0] is %d \n", rcv_buf[0]);
+			printf("<-Switch->  Recieve buf[0] is %d \n", rcv_buf[0]);
 			rcv_buf[recvlen] = 0;
 			switch(rcv_buf[0]) {
 			    case REGISTER_RESPONSE:
@@ -128,7 +128,7 @@ int main(int argc, char **argv)
                     process_keep_alive(rcv_buf);
                     break;
                 default:
-				    printf("Unknown packet! header number: %d \n", rcv_buf[0]);
+				    printf("<-Switch->  Unknown packet! header number: %d \n", rcv_buf[0]);
                     break;				
 			
 			}
@@ -148,7 +148,7 @@ void process_keep_alive(char buf[]) {
 		}
 	}
 	if (idx < 0) {
-	    printf("idx: %d < 0, error! \n");
+	    printf("<-Switch->  idx: %d < 0, error! \n");
 		return;
 	}
 	if (neighbors[idx].active == 0) {
@@ -182,7 +182,7 @@ void process_router_update(char buf[]) {
 void process_response(char buf[]) {
     total_number = buf[1];
 	neighbor_number = buf[2];
-	printf("We got REGISTER_RESPONSE, total_number: %d, neighbor_number: %d \n", total_number, neighbor_number);
+	printf("<-Switch->  We got REGISTER_RESPONSE, total_number: %d, neighbor_number: %d \n", total_number, neighbor_number);
 	neighbors = (Nbor*) malloc(neighbor_number*sizeof(Nbor));
 	next_hop = (Nbor*) malloc((total_number+1)*sizeof(Nbor));
 	int i;
@@ -190,7 +190,7 @@ void process_response(char buf[]) {
 		neighbors[i].nid = buf[3+4*i];
 		neighbors[i].active = buf[3+4*i+1];
 		neighbors[i].port = (buf[3+4*i+2] << 8) | buf[3+4*i+3];
-		printf("3+4*i: %d, nid: %d, active: %d, port: %d \n", 3+4*i, buf[3+4*i], neighbors[i].active, neighbors[i].port);
+		printf("<-Switch->  3+4*i: %d, nid: %d, active: %d, port: %d \n", 3+4*i, buf[3+4*i], neighbors[i].active, neighbors[i].port);
 		timer_t* timerid = neighbors[i].timerid= (timer_t*) malloc(sizeof(timer_t));
 		tpg_timerid = (timer_t*) malloc(sizeof(timer_t));
 		//=== Setup timer for monitoring KEEP_ALIVE ===//
@@ -246,14 +246,15 @@ void periodic_send_keep_alive(union sigval v) {
 	for (i = 0; i < neighbor_number; ++i) {
         remaddr_l.sin_port = neighbors[i].port;
         if (sendto(fd, buf, BUFSIZE, 0, (struct sockaddr *)&remaddr_l, addrlen)==-1) {
-            printf("sendto, %s()", __FUNCTION__);
+            printf("<-Switch->  sendto, %s()", __FUNCTION__);
 	    }
 	}	
 }
 
 void periodic_tpg_update_thread(union sigval v) {
     //=== send TPG update periodically ===//
-	char buf[BUFSIZE];
+	printf("<-Switch->  self_id: %d, @ %s \n", self_id, __FUNCTION__);
+    char buf[BUFSIZE];
     buf[0] = TPG_UPDATE;
 	buf[1] = self_id;
 	socklen_t addrlen = sizeof(remaddr);
