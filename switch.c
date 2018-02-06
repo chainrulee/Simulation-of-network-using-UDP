@@ -87,7 +87,6 @@ int main(int argc, char **argv)
 		exit(1);
 	}
 	//========================================================//
-	printf("<-Switch->  self_id: %d, Sending packet to %s from port %d\n", self_id, server, myaddr.sin_port);
     pid_t send;
 	if (send = fork() == 0) {
 		char buf[BUFSIZE];
@@ -102,6 +101,7 @@ int main(int argc, char **argv)
     } else if (send < 0) {
         printf("<-Switch->  Fork to Send REGISTER_REQUEST failed! \n");
 	}
+//	printf("<-Switch->  self_id: %d, Sending packet to %s from port 0x%x\n", self_id, server, myaddr.sin_port);
     while (1) {
 		char rcv_buf[BUFSIZE];
 		FD_ZERO(&rfds);
@@ -155,6 +155,8 @@ void process_keep_alive(char buf[]) {
 	    printf("<-Switch->  idx: %d < 0, error! \n", idx);
 		return;
 	}
+	neighbors[idx].port = remaddr.sin_port;
+	printf("<-Switch->  self id: %d, nid: %d, port: 0x%x \n", self_id, nid, remaddr.sin_port);
 	int link_fail = neighbors[idx].link_fail;
 	if (link_fail == 1) {
 		printf("<-Switch->  neibor id: %d, link_fail: %d, do nothing when getting KEEP_ALIVR pkt. \n", nid, link_fail);
@@ -194,16 +196,19 @@ void process_router_update(char buf[]) {
 void process_response(char buf[]) {
     total_number = buf[1];
 	neighbor_number = buf[2];
-	printf("<-Switch->  We got REGISTER_RESPONSE, total_number: %d, neighbor_number: %d \n", total_number, neighbor_number);
+	printf("<-Switch->  self id: self_id is %d, We got REGISTER_RESPONSE, total_number: %d, neighbor_number: %d \n", self_id, total_number, neighbor_number);
 	neighbors = (Nbor*) malloc(neighbor_number*sizeof(Nbor));
 	next_hop = (Nbor*) malloc((total_number+1)*sizeof(Nbor));
 	int i;
 	for (i = 0; i < neighbor_number; ++i) {
 		neighbors[i].nid = buf[3+4*i];
 		neighbors[i].active = buf[3+4*i+1];
-		neighbors[i].port = (buf[3+4*i+2] << 8) | buf[3+4*i+3];
+		if (neighbors[i].active == 1) {
+			printf("<-Switch->  self_id is %d, buf[%d]: 0x%x, buf[%d]: 0x%x \n", self_id, 3+4*i+2, buf[3+4*i+2], 3+4*i+3, buf[3+4*i+3]);
+		    neighbors[i].port = ((0xFF & buf[3+4*i+2]) << 8) | (0xFF &buf[3+4*i+3]);
+		}
 		neighbors[i].link_fail = 0;
-		printf("<-Switch->  3+4*i: %d, nid: %d, active: %d, port: %d \n", 3+4*i, buf[3+4*i], neighbors[i].active, neighbors[i].port);
+		printf("<-Switch->  3+4*i: %d, nid: %d, active: %d, port: 0x%x \n", 3+4*i, buf[3+4*i], neighbors[i].active, neighbors[i].port);
 		timer_t* monitor_timerid = neighbors[i].monitor_timerid= (timer_t*) malloc(sizeof(timer_t));
 		timer_t* send_alive_timerid = neighbors[i].send_alive_timerid= (timer_t*) malloc(sizeof(timer_t));
 		tpg_timerid = (timer_t*) malloc(sizeof(timer_t));
@@ -279,7 +284,7 @@ void periodic_send_keep_alive(union sigval v) {
 		    continue;
 		}
         remaddr_l.sin_port = neighbors[i].port;
-		printf("<-Switch->  self_id: %d, send to nid: %d, %s() \n", self_id, neighbors[i].nid, __FUNCTION__);
+		printf("<-Switch->  self_id: %d, send to nid: %d, port: 0x%x, %s() \n", self_id, neighbors[i].nid, neighbors[i].port, __FUNCTION__);
         if (sendto(fd, buf, BUFSIZE, 0, (struct sockaddr *)&remaddr_l, addrlen)==-1) {
             printf("<-Switch->  self_id: %d, sendto nid: %d fail!!!!!!!!!!, %s() \n", self_id, neighbors[i].nid, __FUNCTION__);
 	    }
