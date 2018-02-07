@@ -97,6 +97,7 @@ int main(int argc, char **argv)
 		strcpy(buf+2, switch_hostname);
 		struct sockaddr_in remaddr_l = remaddr;
 		remaddr_l.sin_port = htons(SERVICE_PORT);
+		printf("<-Switch-> Send REGISTER_REQUEST packet \n");
         if (sendto(fd, buf, BUFSIZE, 0, (struct sockaddr *)&remaddr_l, addrlen)==-1) {
             perror("sendto");
 	    }
@@ -167,7 +168,8 @@ void process_keep_alive(char buf[]) {
 	}
 
 	if (neighbors[idx].active == 0 && neighbors[idx].link_fail == 0) {
-	    // send TPG_UPDATE pkt
+	    printf("<-Switch-> id: %d becames reachable again \n", nid);
+		// send TPG_UPDATE pkt
 		one_time_tpg_update();
 		neighbors[idx].active = 1;
 	} else {
@@ -194,13 +196,14 @@ void process_router_update(char buf[]) {
 	// ...
 	for (i = 1; i <= total_number; ++i) {
 	    next_hop[i].nid = buf[i];
+		printf("<-Switch-> from id: %d to destination id: %d , next_hop: %d \n", self_id, i, next_hop[i].nid);
 	}
 }
 
 void process_response(char buf[]) {
     total_number = buf[1];
 	neighbor_number = buf[2];
-	//printf("<-Switch->  self id: self_id is %d, We got REGISTER_RESPONSE, total_number: %d, neighbor_number: %d \n", self_id, total_number, neighbor_number);
+	printf("<-Switch-> self_id is %d, We got REGISTER_RESPONSE \n", self_id);
 	neighbors = (Nbor*) malloc(neighbor_number*sizeof(Nbor));
 	next_hop = (Nbor*) malloc((total_number+1)*sizeof(Nbor));
 	int i;
@@ -290,7 +293,7 @@ void periodic_send_keep_alive(union sigval v) {
         remaddr_l.sin_port = neighbors[i].port;
 		//printf("<-Switch->  self_id: %d, send to nid: %d, port: 0x%x, %s() \n", self_id, neighbors[i].nid, neighbors[i].port, __FUNCTION__);
         if (sendto(fd, buf, BUFSIZE, 0, (struct sockaddr *)&remaddr_l, addrlen)==-1) {
-            printf("<-Switch->  self_id: %d, sendto nid: %d fail!!!!!!!!!!, %s() \n", self_id, neighbors[i].nid, __FUNCTION__);
+            //printf("<-Switch->  self_id: %d, sendto nid: %d fail!!!!!!!!!!, %s() \n", self_id, neighbors[i].nid, __FUNCTION__);
 	    }
 	}	
 }
@@ -368,6 +371,7 @@ void timer_thread(union sigval v)
 	buf[2] = live_num;
 	struct sockaddr_in remaddr_l = remaddr;
 	remaddr_l.sin_port = htons(SERVICE_PORT);
+	printf("<-Switch-> id: %d becames unreachable \n", monitor_nid);
     if (sendto(fd, buf, BUFSIZE, 0, (struct sockaddr *)&remaddr_l, addrlen)==-1) {
             perror("sendto");
 	}
