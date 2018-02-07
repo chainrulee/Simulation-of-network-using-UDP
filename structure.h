@@ -48,7 +48,6 @@ typedef struct neighbor_info {
 
 typedef struct link_cmd {
 	int nid;
-	int active;
 	int link_fail;
 } LinkCmd;
 

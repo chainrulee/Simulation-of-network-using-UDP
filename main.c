@@ -105,7 +105,10 @@ int main (int argc, char **argv) {
 
 				int *pipe_fd = table[nid].pipe_fd_p;
 				write(pipe_fd[1], &link_cmd, sizeof(LinkCmd));
-
+                int tmp = link_cmd.nid;
+				link_cmd.nid = link_cmd.link_fail;
+				link_cmd.link_fail = tmp;
+				write(pipe_fd[1], &link_cmd, sizeof(LinkCmd));
 			} else {
 				if (strcmp(cmd[4], "-s") == 0) {
 					if (table[nid].active == 1)
