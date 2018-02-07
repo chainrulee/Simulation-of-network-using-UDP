@@ -86,14 +86,13 @@ int main (int argc, char **argv) {
 				continue;
             }
 			if (strcmp(cmd[4], "-f") == 0) { // equal
-				if (table[nid].active == 0
-				  || cmd[5] == NULL
-				  || cmd[6] == NULL) {
+				if (cmd[5] == NULL || cmd[6] == NULL) {
 					printf("<-Main->  Error! The number of Link cmd is wrong, please type again. \n");
 					continue;
 				}
 				LinkCmd link_cmd;
-				link_cmd.nid = atoi(cmd[5]);
+				int tgt_id = atoi(cmd[5]);
+				link_cmd.nid = tgt_id;
 				if (strcmp(cmd[6], "-e") == 0) { //enable link
 				    link_cmd.link_fail = 0;
                 } else if (strcmp(cmd[6], "-d") == 0) { //disable link
@@ -102,12 +101,11 @@ int main (int argc, char **argv) {
 					printf("<-Main->  Error! Link cmd is wrong, please type again. \n");
 					continue;
 				}
-
 				int *pipe_fd = table[nid].pipe_fd_p;
 				write(pipe_fd[1], &link_cmd, sizeof(LinkCmd));
-                int tmp = link_cmd.nid;
-				link_cmd.nid = link_cmd.link_fail;
-				link_cmd.link_fail = tmp;
+                
+				link_cmd.nid = nid;
+				pipe_fd = table[tgt_id].pipe_fd_p;
 				write(pipe_fd[1], &link_cmd, sizeof(LinkCmd));
 			} else {
 				if (strcmp(cmd[4], "-s") == 0) {
