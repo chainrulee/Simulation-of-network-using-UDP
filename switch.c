@@ -45,6 +45,7 @@ volatile int self_id, total_number, neighbor_number;
 Nbor *next_hop = NULL, *neighbors = NULL;
 struct sockaddr_in myaddr, remaddr;
 volatile timer_t* tpg_timerid;
+volatile static char control_hostname[BUFSIZE]; 
 
 int main(int argc, char **argv)
 {
@@ -58,10 +59,11 @@ int main(int argc, char **argv)
 		//printf("<-Switch->  argv[%d] is %s @%s \n", i, argv[i], __FUNCTION__);
 	}
 	self_id = atoi(argv[1]);
+	strcpy(control_hostname, argv[2]);
+	
 	/* create a socket */
-
 	if ((fd=socket(AF_INET, SOCK_DGRAM, 0))==-1)
-		//printf("<-Switch->  socket created\n");
+		printf("<-Switch->  Error for socket creating \n");
 
 	/* bind it to all local addresses and pick any port number */
 
@@ -92,6 +94,7 @@ int main(int argc, char **argv)
 		char buf[BUFSIZE];
         buf[0] = REGISTER_REQUEST;
 	    buf[1] = self_id;
+		strcpy(buf+2, control_hostname);
 		struct sockaddr_in remaddr_l = remaddr;
 		remaddr_l.sin_port = htons(SERVICE_PORT);
         if (sendto(fd, buf, BUFSIZE, 0, (struct sockaddr *)&remaddr_l, addrlen)==-1) {
@@ -132,7 +135,7 @@ int main(int argc, char **argv)
                     process_keep_alive(rcv_buf);
                     break;
                 default:
-				    //printf("<-Switch->  Unknown packet! header number: %d \n", rcv_buf[0]);
+				    printf("<-Switch->  Unknown packet! header number: %d \n", rcv_buf[0]);
                     break;				
 			
 			}
@@ -152,7 +155,7 @@ void process_keep_alive(char buf[]) {
 		}
 	}
 	if (idx < 0) {
-	    //printf("<-Switch->  idx: %d < 0, error! \n", idx);
+	    printf("<-Switch->  idx: %d < 0, error! \n", idx);
 		return;
 	}
 	neighbors[idx].port = remaddr.sin_port;
@@ -171,7 +174,7 @@ void process_keep_alive(char buf[]) {
 	    //=== reset the timer ===//
 	    timer_t* monitor_timerid = neighbors[idx].monitor_timerid;
 	    struct itimerspec it;
-	    it.it_interval.tv_sec = 6;	//间隔6s
+	    it.it_interval.tv_sec = 6;	//6s
         it.it_interval.tv_nsec = 0;
         it.it_value.tv_sec = 6;		
         it.it_value.tv_nsec = 0;
@@ -287,7 +290,7 @@ void periodic_send_keep_alive(union sigval v) {
         remaddr_l.sin_port = neighbors[i].port;
 		//printf("<-Switch->  self_id: %d, send to nid: %d, port: 0x%x, %s() \n", self_id, neighbors[i].nid, neighbors[i].port, __FUNCTION__);
         if (sendto(fd, buf, BUFSIZE, 0, (struct sockaddr *)&remaddr_l, addrlen)==-1) {
-            //printf("<-Switch->  self_id: %d, sendto nid: %d fail!!!!!!!!!!, %s() \n", self_id, neighbors[i].nid, __FUNCTION__);
+            printf("<-Switch->  self_id: %d, sendto nid: %d fail!!!!!!!!!!, %s() \n", self_id, neighbors[i].nid, __FUNCTION__);
 	    }
 	}	
 }
