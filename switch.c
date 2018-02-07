@@ -45,7 +45,7 @@ volatile int self_id, total_number, neighbor_number;
 Nbor *next_hop = NULL, *neighbors = NULL;
 struct sockaddr_in myaddr, remaddr;
 volatile timer_t* tpg_timerid;
-volatile static char control_hostname[BUFSIZE]; 
+volatile static char control_hostname[BUFSIZE], switch_hostname[BUFSIZE]; 
 
 int main(int argc, char **argv)
 {
@@ -60,7 +60,7 @@ int main(int argc, char **argv)
 	}
 	self_id = atoi(argv[1]);
 	strcpy(control_hostname, argv[2]);
-	
+	gethostname(switch_hostname, 128);
 	/* create a socket */
 	if ((fd=socket(AF_INET, SOCK_DGRAM, 0))==-1)
 		printf("<-Switch->  Error for socket creating \n");
@@ -94,7 +94,7 @@ int main(int argc, char **argv)
 		char buf[BUFSIZE];
         buf[0] = REGISTER_REQUEST;
 	    buf[1] = self_id;
-		strcpy(buf+2, control_hostname);
+		strcpy(buf+2, switch_hostname);
 		struct sockaddr_in remaddr_l = remaddr;
 		remaddr_l.sin_port = htons(SERVICE_PORT);
         if (sendto(fd, buf, BUFSIZE, 0, (struct sockaddr *)&remaddr_l, addrlen)==-1) {
