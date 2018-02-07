@@ -75,7 +75,7 @@ node_t* assignAdjEdge(Tpg tpg) {
 void timer_thread(union sigval v)
 {
     int i,j;
-    printf("Time limit exceeded! Switch %d is dead\n", v.sival_int);
+    printf("Time limit exceeded! Switch %d is dead\n", v.sival_int + 1);
     evp.sigev_value.sival_int = v.sival_int;
     it.it_interval.tv_sec = 0;  //间隔5s
     it.it_value.tv_sec = 0;
@@ -254,17 +254,13 @@ void control_process() {
                         }
                         for (i = 0; i < buf[2]; ++i) {
                             change[buf[3+i]-1] = 1;
+                            printf("alive id from %d: %d\n", id+1, buf[3+i]);
                         }
                         ptr = adj_edge+id;
                         while (ptr != NULL) {
                             if (alive[id][ptr->id] != change[ptr->id]) {
-                                //printf("switch id %d: %d -> %d\n", ptr->id+1, alive[id][ptr->id], change[ptr->id]);
+                                printf("switch id %d: %d -> %d\n", ptr->id+1, alive[id][ptr->id], change[ptr->id]);
                                 isChange = 1;
-                                /*for (i = 0; i < n; ++i){
-                                    for (j = 0; j < n; ++j) {
-                                        printf("alive[%d][%d] = %d\n", i, j, alive[i][j]);
-                                    }
-                                }*/
                                 alive[id][ptr->id] = change[ptr->id];
                                 if (id < ptr->id) {
                                     for (i = 0; i < tpg.edge_num; ++i) {
@@ -286,6 +282,11 @@ void control_process() {
                             ptr = ptr->next;
                         }
                         if (isChange) {
+                            /*for (i = 0; i < n; ++i){
+                                for (j = 0; j < n; ++j) {
+                                    printf("alive[%d][%d] = %d\n", i, j, alive[i][j]);
+                                }
+                            }*/
                             pid = fork();
                             if (pid == 0) {
                                 printf("Sending ROUTER_UPDATE because of link failure\n");
