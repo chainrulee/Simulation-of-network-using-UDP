@@ -141,15 +141,16 @@ void control_process() {
             alive[i][j] = 0;
         }
     }
+    char hostname[n][BUFSIZE];
     //create a table for storing next hops
     pid_t pid;
 
     //timer 
-    memset(&evp, 0, sizeof(struct sigevent));   //清零初始化
+    memset(&evp, 0, sizeof(struct sigevent));   
 
-    //evp.sigev_value.sival_int = 1;        //也是标识定时器的，这和timerid有什么区别？回调函数可以获得
-    evp.sigev_notify = SIGEV_THREAD;        //线程通知的方式，派驻新线程
-    evp.sigev_notify_function = timer_thread;   //线程函数地址
+    //evp.sigev_value.sival_int = 1;        
+    evp.sigev_notify = SIGEV_THREAD;        
+    evp.sigev_notify_function = timer_thread;   
 
     it.it_interval.tv_nsec = 0;
     it.it_value.tv_nsec = 0;
@@ -170,6 +171,8 @@ void control_process() {
                     case REGISTER_REQUEST:
                         printf("Received REGISTER_REQUEST from %d\n", buf[1]);
                         id = buf[1]-1;
+                        strcpy(hostname[id],buf+2);
+                        printf("hostname: %s\n", hostname[id]);
                         *(tpg.switches_ptr+id) = 1;
                         *(port+id) = remaddr.sin_port;
                         //printf("switch %d has port %d\n", id+1, *(port+id));
@@ -191,6 +194,13 @@ void control_process() {
                             //printf("port sencond part = %d\n", buf[i-1]);
                             ptr = ptr->next;
                             ++cnt;
+                        }
+                        buf[i] = '\0';
+                        ptr = adj_edge+id;
+                        while (ptr != NULL) {
+                            strcat(buf,hostname[ptr->id]);
+                            strcat(buf," ");
+                            ptr = ptr->next;
                         }
                         buf[1] = n;
                         buf[2] = cnt;
