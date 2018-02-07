@@ -31,20 +31,20 @@ void periodic_tpg_update_thread(union sigval v);
 void periodic_send_keep_alive(union sigval v) ;
 void one_time_tpg_update();
 
-static volatile fd_set rfds;
-static volatile struct timeval tv;
-static volatile int retval;
-static volatile int recvlen;
-static volatile int fd;
-static volatile int self_id, total_number, neighbor_number; 
+volatile fd_set rfds;
+volatile struct timeval tv;
+volatile int retval;
+volatile int recvlen;
+volatile int fd;
+volatile int self_id, total_number, neighbor_number; 
 //  next_hop[i]: If we want to send pkt to node i, the next hop
 //               for this pkt is next_hop[i] 
 //
 //  next_hop[i]:  start from i = 0 to total_number
 //  neighbors[i]: start from i = 1 to neighbor_number+1
-static Nbor *next_hop = NULL, *neighbors = NULL;
-static struct sockaddr_in myaddr, remaddr;
-static volatile timer_t* tpg_timerid;
+Nbor *next_hop = NULL, *neighbors = NULL;
+struct sockaddr_in myaddr, remaddr;
+volatile timer_t* tpg_timerid;
 
 int main(int argc, char **argv)
 {
@@ -166,6 +166,7 @@ void process_keep_alive(char buf[]) {
 	if (neighbors[idx].active == 0 && neighbors[idx].link_fail == 0) {
 	    // send TPG_UPDATE pkt
 		one_time_tpg_update();
+		neighbors[idx].active = 1;
 	} else {
 	    //=== reset the timer ===//
 	    timer_t* monitor_timerid = neighbors[idx].monitor_timerid;
@@ -358,6 +359,7 @@ void timer_thread(union sigval v)
 		    idx = i;
 		}
 	}
+	--live_num;
 	if (idx > -1) {
 		neighbors[idx].active = 0;
 	}
