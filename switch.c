@@ -36,7 +36,8 @@ volatile struct timeval tv;
 volatile int retval;
 volatile int recvlen;
 volatile int fd;
-volatile int self_id, total_number, neighbor_number; 
+volatile int self_id, total_number, neighbor_number;
+char **hostnames;
 //  next_hop[i]: If we want to send pkt to node i, the next hop
 //               for this pkt is next_hop[i] 
 //
@@ -275,6 +276,30 @@ void process_response(char buf[]) {
 	        }
         }
 	}
+
+
+	hostnames = (char**) malloc((total_number+1)*sizeof(char*));
+	for (i = 1; i <= total_number; ++i) {
+	    hostnames[i] = (char*) malloc(128*sizeof(char));
+		hostnames[i][127] = 0;
+	}
+
+    char all_cmd[2048], *token;
+
+
+	strcpy(all_cmd, buf+3+4*neighbor_number);
+	token = strtok(all_cmd, " ");
+	for (i = 0; i < neighbor_number && token != NULL; ++i) {
+	    if (neighbors[i].active == 1) {
+			strcpy(   hostnames[neighbors[i].nid], token);
+			token = strtok(NULL, " ");
+	    }
+	}
+
+	for (i = 1; i <= total_number; ++i) {
+	    printf("<-Switch-> selfid:%d,  i: %d, hostname: %s \n", self_id, i, hostnames[i]);
+	}
+
 }
 
 void periodic_send_keep_alive(union sigval v) {
