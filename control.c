@@ -195,27 +195,28 @@ void control_process() {
                             ptr = ptr->next;
                             ++cnt;
                         }
-                        buf[i] = '\0';
                         ptr = adj_edge+id;
                         while (ptr != NULL) {
                             if (*(tpg.switches_ptr+ptr->id) == 0) {
                                 ptr = ptr->next;
                                 continue;
                             }
-                            strcat(buf,hostname[ptr->id]);
-                            strcat(buf," ");
+                            strcpy(buf+i,hostname[ptr->id]);
+                            strcpy(buf+i+strlen(hostname[ptr->id])," ");
+                            i += strlen(hostname[ptr->id])+1;
                             ptr = ptr->next;
                         }
                         buf[1] = n;
                         buf[2] = cnt;
+                        //printf("buf: %s\n", buf+(3+4*cnt));
                         //===== send to response to client =====//
-                        printf("Sending REGISTER_RESPONSE\n");
+                        //printf("Sending REGISTER_RESPONSE\n");
                         if (sendto(fd, buf, BUFSIZE, 0, (struct sockaddr *)&remaddr, slen)==-1)
                             perror("REGISTER_RESPONSE");                    
                         pid = fork();
                         if (pid == 0) {
                             //NOW WE HAVE TO SEND ROUTER UPDATE TO EVERY OTHER SWITCHES
-                            printf("Sending ROUTER_UPDATE (switch is registered\n");
+                            printf("Sending ROUTER_UPDATE (switch is registered)\n");
                             nextHop = dijkstra(tpg);
                             //printf("what about here\n");
                             buf[0] = ROUTER_UPDATE;
@@ -226,6 +227,7 @@ void control_process() {
                                         buf[j+1] = nextHop[i][j];                                
                                     }
                                     remaddr.sin_port = *(port+i);
+                                    //printf("ROUTER_UPDATE: buf: %s\n",buf);
                                     if (sendto(fd, buf, strlen(buf), 0, (struct sockaddr *)&remaddr, slen)==-1)
                                         perror("ROUTER_UPDATE");
                                 }
@@ -309,11 +311,13 @@ void control_process() {
                                 nextHop = dijkstra(tpg);
                                 buf[0] = ROUTER_UPDATE;
                                 for (i = 0; i < n; i++) {
-                                    if (*(tpg.switches_ptr+id) == 1) {
+                                    if (*(tpg.switches_ptr+i) == 1) {
                                         for (j = 0; j < n; j++) {
                                             buf[j+1] = nextHop[i][j];                                
                                         }
                                         remaddr.sin_port = *(port+i);
+                                        //printf("id = %d\n", id);
+                                        //printf("ROUTER_UPDATE: buf: %s\n",buf);
                                         if (sendto(fd, buf, strlen(buf), 0, (struct sockaddr *)&remaddr, slen)==-1)
                                             perror("ROUTER_UPDATE");
                                     }
