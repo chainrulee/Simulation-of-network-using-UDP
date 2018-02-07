@@ -75,15 +75,16 @@ node_t* assignAdjEdge(Tpg tpg) {
 void timer_thread(union sigval v)
 {
     int i,j;
-    printf("timer_thread function! %d\n", v.sival_int);
+    printf("Time limit exceeded! Switch %d is dead\n", v.sival_int);
     evp.sigev_value.sival_int = v.sival_int;
-    it.it_interval.tv_sec = 5;  //间隔5s
-    it.it_value.tv_sec = 5;
+    it.it_interval.tv_sec = 0;  //间隔5s
+    it.it_value.tv_sec = 0;
     if (timer_settime(*timerid[v.sival_int], 0, &it, NULL) == -1)
     {
         perror("fail to timer_settime");
         exit(-1);
     }
+    *(tpg.switches_ptr+v.sival_int) = 0;
     printf("Sending ROUTER_UPDATE\n");
     nextHop = dijkstra(tpg);
     //printf("what about here\n");
@@ -107,12 +108,6 @@ void control_process() {
     int recvlen;            /* # bytes received */
     node_t *ptr;
     int i, j, id;
-    int alive[n][n];
-    for (i = 0; i < n; ++i) {
-        for (j = 0; j < n; ++j) {
-            alive[i][j] = 0;
-        }
-    }
 
     //=====//
     fd_set rfds;
@@ -140,6 +135,12 @@ void control_process() {
 
     //create a map to adjacent edges
     node_t* adj_edge = assignAdjEdge(tpg);
+    int alive[n][n];
+    for (i = 0; i < n; ++i) {
+        for (j = 0; j < n; ++j) {
+            alive[i][j] = 0;
+        }
+    }
     //create a table for storing next hops
     pid_t pid;
 
@@ -155,23 +156,23 @@ void control_process() {
 
     /* now loop, receiving data and printing what we received */
     while (1) {
-        printf("waiting on port %d\n", SERVICE_PORT);
-        tv.tv_sec = 5; tv.tv_usec = 0; /* Wait up to five seconds. */
+        //printf("waiting on port %d\n", SERVICE_PORT);
+        //tv.tv_sec = 5; tv.tv_usec = 0; /* Wait up to five seconds. */
         FD_ZERO(&rfds);
         FD_SET(fd, &rfds);
-        retval = select(fd+1, &rfds, NULL, NULL, &tv);
+        retval = select(fd+1, &rfds, NULL, NULL, NULL);
         if (FD_ISSET(fd, &rfds)) {
             recvlen = recvfrom(fd, buf, BUFSIZE, 0, (struct sockaddr *)&remaddr, &addrlen);
             if (recvlen > 0) {
                 buf[recvlen] = 0;
-                printf("received message: \"%s\"\n", buf);
+                //printf("received message: \"%s\"\n", buf);
                 switch(buf[0]) {
                     case REGISTER_REQUEST:
                         printf("Received REGISTER_REQUEST from %d\n", buf[1]);
                         id = buf[1]-1;
                         *(tpg.switches_ptr+id) = 1;
                         *(port+id) = remaddr.sin_port;
-                        printf("switch %d has port %d\n", id+1, *(port+id));
+                        //printf("switch %d has port %d\n", id+1, *(port+id));
                         buf[0] = REGISTER_RESPONSE;
                         ptr = adj_edge+id;
                         i = 3;
@@ -179,15 +180,15 @@ void control_process() {
                         //int mask1 = 0xFF00;
                         int mask2 = 0xFF;
                         while (ptr != NULL) {
-                            printf("i = %d\n", i);
+                            //printf("i = %d\n", i);
                             buf[i++] = ptr->id + 1;
-                            printf("found neighbor id = %d\n", buf[i-1]);
+                            //printf("found neighbor id = %d\n", buf[i-1]);
                             buf[i++] = *(tpg.switches_ptr+ptr->id);
-                            printf("port[%d] = %d\n", ptr->id, *(port+ptr->id));
+                            //printf("port[%d] = %d\n", ptr->id, *(port+ptr->id));
                             buf[i++] = *(port+ptr->id) >> 8;
-                            printf("port first part = %d\n", buf[i-1]);
+                            //printf("port first part = %d\n", buf[i-1]);
                             buf[i++] = *(port+ptr->id) & mask2;
-                            printf("port sencond part = %d\n", buf[i-1]);
+                            //printf("port sencond part = %d\n", buf[i-1]);
                             ptr = ptr->next;
                             ++cnt;
                         }
@@ -216,6 +217,7 @@ void control_process() {
                             }
                             //printf("I am here\n");
                             //kill(getpid(), SIGKILL);
+                            printf("ROUTER_UPDATE sent\n");
                             exit(EXIT_SUCCESS);
                         }
                         timerid[id] = (timer_t *)malloc(sizeof(timer_t));
@@ -256,7 +258,13 @@ void control_process() {
                         ptr = adj_edge+id;
                         while (ptr != NULL) {
                             if (alive[id][ptr->id] != change[ptr->id]) {
+                                //printf("switch id %d: %d -> %d\n", ptr->id+1, alive[id][ptr->id], change[ptr->id]);
                                 isChange = 1;
+                                /*for (i = 0; i < n; ++i){
+                                    for (j = 0; j < n; ++j) {
+                                        printf("alive[%d][%d] = %d\n", i, j, alive[i][j]);
+                                    }
+                                }*/
                                 alive[id][ptr->id] = change[ptr->id];
                                 if (id < ptr->id) {
                                     for (i = 0; i < tpg.edge_num; ++i) {

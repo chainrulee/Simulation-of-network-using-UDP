@@ -11,7 +11,7 @@ int maxWidth(int width[], int sptSet[], int V, int *switches) {
 	    if (!switches[v]) continue;
 	    if (sptSet[v] == 0 && width[v] > max) {
 			max = width[v], max_index = v;
-			printf("max_index = %d\n",v);
+			//printf("max_index = %d\n",v);
 	    }
     }
     return max_index;
@@ -46,7 +46,7 @@ int** dijkstra(Tpg tpg) {
 	    //printf("node2 = %d", node2);
 	    int bandwidth = tpg.edge[i].bandwidth;
 	    int active = tpg.edge[i].active;
-	    printf("switches %d %d %d\n", switches[node1], switches[node2], active);
+	    //printf("switches %d %d %d\n", switches[node1], switches[node2], active);
 	    if (switches[node1] && switches[node2] && active) {
 			//printf("why\n");
 			if (nodeptr[node1]->next == NULL) nodeptr[node1]->next = (node_t *)malloc(sizeof(node_t));
