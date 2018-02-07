@@ -113,7 +113,7 @@ int main(int argc, char **argv)
 		    read(STDIN_FILENO, &link_cmd, sizeof(LinkCmd));
 		    printf("<-Switch-> Recieve link cmd. id: %d, fail status: %d \n", link_cmd.nid, link_cmd.link_fail);
 			for (i = 0; i < neighbor_number; ++i) {
-			    if (neighbors[i].nid = link_cmd.nid) {
+			    if (neighbors[i].nid == link_cmd.nid) {
 				    neighbors[i].link_fail = link_cmd.link_fail;
 				}
 			}
