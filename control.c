@@ -239,8 +239,8 @@ void control_process() {
                         }
                         timerid[id] = (timer_t *)malloc(sizeof(timer_t));
                         //Set timer to monitor TPG_UPDATE
-                        it.it_interval.tv_sec = 5;  //间隔5s
-                        it.it_value.tv_sec = 5;
+                        it.it_interval.tv_sec = 6;  //间隔5s
+                        it.it_value.tv_sec = 6;
                         evp.sigev_value.sival_int = id;   
                         if (timer_create(CLOCKID, &evp, timerid[id]) == -1)
                         {
@@ -256,8 +256,8 @@ void control_process() {
                     case TPG_UPDATE:
                         printf("Received TPG_UPDATE from %d\n", buf[1]);
                         int id = buf[1] - 1;
-                        it.it_interval.tv_sec = 5;  //间隔5s
-                        it.it_value.tv_sec = 5;
+                        it.it_interval.tv_sec = 6;  //间隔5s
+                        it.it_value.tv_sec = 6;
                         evp.sigev_value.sival_int = id;
                         if (timer_settime(*timerid[id], 0, &it, NULL) == -1)
                         {
