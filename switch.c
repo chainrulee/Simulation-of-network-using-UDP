@@ -16,7 +16,7 @@ void *thread(void *ptr)
 {
     int type = (int) ptr;
 	 while (1) {
-        printf("<-Switch->   Main switch funciton \n");
+        //printf("<-Switch->   Main switch funciton \n");
         sleep(5);
      }
 
@@ -55,13 +55,13 @@ int main(int argc, char **argv)
 	char *server = "127.0.0.1";
 	int i;
 	for (i = 0; i < argc; ++i) {
-		printf("<-Switch->  argv[%d] is %s @%s \n", i, argv[i], __FUNCTION__);
+		//printf("<-Switch->  argv[%d] is %s @%s \n", i, argv[i], __FUNCTION__);
 	}
 	self_id = atoi(argv[1]);
 	/* create a socket */
 
 	if ((fd=socket(AF_INET, SOCK_DGRAM, 0))==-1)
-		printf("<-Switch->  socket created\n");
+		//printf("<-Switch->  socket created\n");
 
 	/* bind it to all local addresses and pick any port number */
 
@@ -99,9 +99,9 @@ int main(int argc, char **argv)
 	    }
 		exit(EXIT_SUCCESS);
     } else if (send < 0) {
-        printf("<-Switch->  Fork to Send REGISTER_REQUEST failed! \n");
+        //printf("<-Switch->  Fork to Send REGISTER_REQUEST failed! \n");
 	}
-//	printf("<-Switch->  self_id: %d, Sending packet to %s from port 0x%x\n", self_id, server, myaddr.sin_port);
+//	//printf("<-Switch->  self_id: %d, Sending packet to %s from port 0x%x\n", self_id, server, myaddr.sin_port);
     while (1) {
 		char rcv_buf[BUFSIZE];
 		FD_ZERO(&rfds);
@@ -111,7 +111,7 @@ int main(int argc, char **argv)
 		if (FD_ISSET(STDIN_FILENO, &rfds)) {
 			LinkCmd link_cmd;
 		    read(STDIN_FILENO, &link_cmd, sizeof(LinkCmd));
-		    printf("<-Switch-> Recieve link cmd. id: %d, fail status: %d \n", link_cmd.nid, link_cmd.link_fail);
+		    //printf("<-Switch-> Recieve link cmd. id: %d, fail status: %d \n", link_cmd.nid, link_cmd.link_fail);
 			for (i = 0; i < neighbor_number; ++i) {
 			    if (neighbors[i].nid == link_cmd.nid) {
 				    neighbors[i].link_fail = link_cmd.link_fail;
@@ -119,7 +119,7 @@ int main(int argc, char **argv)
 			}
 		} else if (FD_ISSET(fd, &rfds)) {
 		    recvlen = recvfrom(fd, rcv_buf, BUFSIZE, 0, (struct sockaddr *)&remaddr, &addrlen);
-			printf("<-Switch->  Recieve buf[0] is %d \n", rcv_buf[0]);
+			//printf("<-Switch->  Recieve buf[0] is %d \n", rcv_buf[0]);
 			rcv_buf[recvlen] = 0;
 			switch(rcv_buf[0]) {
 			    case REGISTER_RESPONSE:
@@ -132,7 +132,7 @@ int main(int argc, char **argv)
                     process_keep_alive(rcv_buf);
                     break;
                 default:
-				    printf("<-Switch->  Unknown packet! header number: %d \n", rcv_buf[0]);
+				    //printf("<-Switch->  Unknown packet! header number: %d \n", rcv_buf[0]);
                     break;				
 			
 			}
@@ -142,7 +142,7 @@ int main(int argc, char **argv)
 }
 
 void process_keep_alive(char buf[]) {
-	printf("<-Switch->  @ %s, from nid: %d  \n", __FUNCTION__, buf[1]);
+	//printf("<-Switch->  @ %s, from nid: %d  \n", __FUNCTION__, buf[1]);
     int nid = buf[1];
 	int i, idx = -1;
 	for (i = 0; i < neighbor_number; ++i) {
@@ -152,14 +152,14 @@ void process_keep_alive(char buf[]) {
 		}
 	}
 	if (idx < 0) {
-	    printf("<-Switch->  idx: %d < 0, error! \n", idx);
+	    //printf("<-Switch->  idx: %d < 0, error! \n", idx);
 		return;
 	}
 	neighbors[idx].port = remaddr.sin_port;
-	printf("<-Switch->  self id: %d, nid: %d, port: 0x%x \n", self_id, nid, remaddr.sin_port);
+	//printf("<-Switch->  self id: %d, nid: %d, port: 0x%x \n", self_id, nid, remaddr.sin_port);
 	int link_fail = neighbors[idx].link_fail;
 	if (link_fail == 1) {
-		printf("<-Switch->  neibor id: %d, link_fail: %d, do nothing when getting KEEP_ALIVE pkt. \n", nid, link_fail);
+		//printf("<-Switch->  neibor id: %d, link_fail: %d, do nothing when getting KEEP_ALIVE pkt. \n", nid, link_fail);
 		return;
 	}
 
@@ -197,7 +197,7 @@ void process_router_update(char buf[]) {
 void process_response(char buf[]) {
     total_number = buf[1];
 	neighbor_number = buf[2];
-	printf("<-Switch->  self id: self_id is %d, We got REGISTER_RESPONSE, total_number: %d, neighbor_number: %d \n", self_id, total_number, neighbor_number);
+	//printf("<-Switch->  self id: self_id is %d, We got REGISTER_RESPONSE, total_number: %d, neighbor_number: %d \n", self_id, total_number, neighbor_number);
 	neighbors = (Nbor*) malloc(neighbor_number*sizeof(Nbor));
 	next_hop = (Nbor*) malloc((total_number+1)*sizeof(Nbor));
 	int i;
@@ -205,11 +205,11 @@ void process_response(char buf[]) {
 		neighbors[i].nid = buf[3+4*i];
 		neighbors[i].active = buf[3+4*i+1];
 		if (neighbors[i].active == 1) {
-			printf("<-Switch->  self_id is %d, buf[%d]: 0x%x, buf[%d]: 0x%x \n", self_id, 3+4*i+2, buf[3+4*i+2], 3+4*i+3, buf[3+4*i+3]);
+			//printf("<-Switch->  self_id is %d, buf[%d]: 0x%x, buf[%d]: 0x%x \n", self_id, 3+4*i+2, buf[3+4*i+2], 3+4*i+3, buf[3+4*i+3]);
 		    neighbors[i].port = ((0xFF & buf[3+4*i+2]) << 8) | (0xFF &buf[3+4*i+3]);
 		}
 		neighbors[i].link_fail = 0;
-		printf("<-Switch->  3+4*i: %d, nid: %d, active: %d, port: 0x%x \n", 3+4*i, buf[3+4*i], neighbors[i].active, neighbors[i].port);
+		//printf("<-Switch->  3+4*i: %d, nid: %d, active: %d, port: 0x%x \n", 3+4*i, buf[3+4*i], neighbors[i].active, neighbors[i].port);
 		timer_t* monitor_timerid = neighbors[i].monitor_timerid= (timer_t*) malloc(sizeof(timer_t));
 		timer_t* send_alive_timerid = neighbors[i].send_alive_timerid= (timer_t*) malloc(sizeof(timer_t));
 		tpg_timerid = (timer_t*) malloc(sizeof(timer_t));
@@ -281,20 +281,20 @@ void periodic_send_keep_alive(union sigval v) {
 	int i;
 	for (i = 0; i < neighbor_number; ++i) {
 		if (neighbors[i].link_fail == 1) {
-		    printf("<-Switch->  self_id: %d,  nid: %d, link_fail status: %d, Not send %s() \n", self_id, neighbors[i].nid, neighbors[i].link_fail, __FUNCTION__);
+		    //printf("<-Switch->  self_id: %d,  nid: %d, link_fail status: %d, Not send %s() \n", self_id, neighbors[i].nid, neighbors[i].link_fail, __FUNCTION__);
 		    continue;
 		}
         remaddr_l.sin_port = neighbors[i].port;
-		printf("<-Switch->  self_id: %d, send to nid: %d, port: 0x%x, %s() \n", self_id, neighbors[i].nid, neighbors[i].port, __FUNCTION__);
+		//printf("<-Switch->  self_id: %d, send to nid: %d, port: 0x%x, %s() \n", self_id, neighbors[i].nid, neighbors[i].port, __FUNCTION__);
         if (sendto(fd, buf, BUFSIZE, 0, (struct sockaddr *)&remaddr_l, addrlen)==-1) {
-            printf("<-Switch->  self_id: %d, sendto nid: %d fail!!!!!!!!!!, %s() \n", self_id, neighbors[i].nid, __FUNCTION__);
+            //printf("<-Switch->  self_id: %d, sendto nid: %d fail!!!!!!!!!!, %s() \n", self_id, neighbors[i].nid, __FUNCTION__);
 	    }
 	}	
 }
 
 void one_time_tpg_update() {
     //=== send TPG update only one time when receiving pkt from previously inactive node. ===//
-	printf("<-Switch->  self_id: %d, @ %s \n", self_id, __FUNCTION__);
+	//printf("<-Switch->  self_id: %d, @ %s \n", self_id, __FUNCTION__);
     char buf[BUFSIZE];
     buf[0] = TPG_UPDATE;
 	buf[1] = self_id;
@@ -318,7 +318,7 @@ void one_time_tpg_update() {
 
 void periodic_tpg_update_thread(union sigval v) {
     //=== send TPG update periodically ===//
-	printf("<-Switch->  self_id: %d, @ %s \n", self_id, __FUNCTION__);
+	//printf("<-Switch->  self_id: %d, @ %s \n", self_id, __FUNCTION__);
     char buf[BUFSIZE];
     buf[0] = TPG_UPDATE;
 	buf[1] = self_id;
@@ -341,7 +341,7 @@ void periodic_tpg_update_thread(union sigval v) {
 
 void timer_thread(union sigval v)
 {
-	printf("@%s function! nid: %d is timeout. \n", __FUNCTION__, v.sival_int);
+	//printf("@%s function! nid: %d is timeout. \n", __FUNCTION__, v.sival_int);
 //=== send TPG update since timeout ===//
 	int monitor_nid = v.sival_int;
 	char buf[BUFSIZE];
