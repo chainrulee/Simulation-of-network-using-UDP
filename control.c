@@ -96,7 +96,7 @@ void timer_thread(union sigval v)
                 buf[j+1] = nextHop[i][j];                                
             }
             remaddr.sin_port = *(port+i);
-            if (sendto(fd, buf, strlen(buf), 0, (struct sockaddr *)&remaddr, slen)==-1)
+            if (sendto(fd, buf, BUFSIZE, 0, (struct sockaddr *)&remaddr, slen)==-1)
                 perror("ROUTER_UPDATE");
         }
     }
@@ -223,12 +223,13 @@ void control_process() {
                             for (i = 0; i < n; i++) {
                                 if (*(tpg.switches_ptr+i) == 1) {
                                     //printf("Sending ROUTER_UPDATE to switch %d\n", i+1);
-                                    for (j = 0; j < n; j++) {
-                                        buf[j+1] = nextHop[i][j];                                
-                                    }
+                                    /*for (j = 0; j < n; j++) {
+                                        buf[j+1] = nextHop[i][j];
+                                        printf("buf[%d] = %d\n", j+1, buf[j+1]);                                
+                                    }*/
                                     remaddr.sin_port = *(port+i);
                                     //printf("ROUTER_UPDATE: buf: %s\n",buf);
-                                    if (sendto(fd, buf, strlen(buf), 0, (struct sockaddr *)&remaddr, slen)==-1)
+                                    if (sendto(fd, buf, BUFSIZE, 0, (struct sockaddr *)&remaddr, slen)==-1)
                                         perror("ROUTER_UPDATE");
                                 }
                             }
@@ -318,7 +319,7 @@ void control_process() {
                                         remaddr.sin_port = *(port+i);
                                         //printf("id = %d\n", id);
                                         //printf("ROUTER_UPDATE: buf: %s\n",buf);
-                                        if (sendto(fd, buf, strlen(buf), 0, (struct sockaddr *)&remaddr, slen)==-1)
+                                        if (sendto(fd, buf, BUFSIZE, 0, (struct sockaddr *)&remaddr, slen)==-1)
                                             perror("ROUTER_UPDATE");
                                     }
                                 }
