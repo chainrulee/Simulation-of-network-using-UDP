@@ -75,7 +75,7 @@ node_t* assignAdjEdge(Tpg tpg) {
 void timer_thread(union sigval v)
 {
     int i,j;
-    printf("Time limit exceeded! Switch %d is dead\n", v.sival_int + 1);
+    printf("<-Controller-> Time limit exceeded! Switch %d is dead\n", v.sival_int + 1);
     evp.sigev_value.sival_int = v.sival_int;
     it.it_interval.tv_sec = 0;  //间隔5s
     it.it_value.tv_sec = 0;
@@ -85,7 +85,7 @@ void timer_thread(union sigval v)
         exit(-1);
     }
     *(tpg.switches_ptr+v.sival_int) = 0;
-    printf("Sending ROUTER_UPDATE (switch is down)\n");
+    printf("<-Controller-> Sending ROUTER_UPDATE (switch is down)\n");
     nextHop = dijkstra(tpg);
     //printf("what about here\n");
     buf[0] = ROUTER_UPDATE;
@@ -169,10 +169,10 @@ void control_process() {
                 //printf("received message: \"%s\"\n", buf);
                 switch(buf[0]) {
                     case REGISTER_REQUEST:
-                        printf("Received REGISTER_REQUEST from %d\n", buf[1]);
+                        printf("<-Controller-> Received REGISTER_REQUEST from %d\n", buf[1]);
                         id = buf[1]-1;
                         strcpy(hostname[id],buf+2);
-                        printf("hostname: %s\n", hostname[id]);
+                        printf("<-Controller-> hostname: %s\n", hostname[id]);
                         *(tpg.switches_ptr+id) = 1;
                         *(port+id) = remaddr.sin_port;
                         //printf("switch %d has port %d\n", id+1, *(port+id));
@@ -216,7 +216,7 @@ void control_process() {
                         pid = fork();
                         if (pid == 0) {
                             //NOW WE HAVE TO SEND ROUTER UPDATE TO EVERY OTHER SWITCHES
-                            printf("Sending ROUTER_UPDATE (switch is registered)\n");
+                            printf("<-Controller-> Sending ROUTER_UPDATE (switch is registered)\n");
                             nextHop = dijkstra(tpg);
                             //printf("what about here\n");
                             buf[0] = ROUTER_UPDATE;
@@ -234,7 +234,7 @@ void control_process() {
                             }
                             //printf("I am here\n");
                             //kill(getpid(), SIGKILL);
-                            printf("ROUTER_UPDATE sent\n");
+                            printf("<-Controller-> ROUTER_UPDATE sent\n");
                             exit(EXIT_SUCCESS);
                         }
                         timerid[id] = (timer_t *)malloc(sizeof(timer_t));
@@ -254,7 +254,7 @@ void control_process() {
                         }
                         break;
                     case TPG_UPDATE:
-                        printf("Received TPG_UPDATE from %d\n", buf[1]);
+                        printf("<-Controller-> Received TPG_UPDATE from %d\n", buf[1]);
                         int id = buf[1] - 1;
                         it.it_interval.tv_sec = 6;  //间隔5s
                         it.it_value.tv_sec = 6;
@@ -271,13 +271,13 @@ void control_process() {
                         }
                         for (i = 0; i < buf[2]; ++i) {
                             change[buf[3+i]-1] = 1;
-                            printf("alive id from %d: %d\n", id+1, buf[3+i]);
+                            //printf("alive id from %d: %d\n", id+1, buf[3+i]);
                         }
                         ptr = adj_edge+id;
                         while (ptr != NULL) {
                             if (alive[id][ptr->id] != change[ptr->id]) {
                                 if (!change[ptr->id]) printf("Link failure: %d -> %d\n", id+1, ptr->id + 1);
-                                else printf("Link reconnected: %d -> %d\n", id+1, ptr->id + 1);
+                                else printf("<-Controller-> Link reconnected: %d -> %d\n", id+1, ptr->id + 1);
                                 isChange = 1;
                                 alive[id][ptr->id] = change[ptr->id];
                                 if (id < ptr->id) {
@@ -307,7 +307,7 @@ void control_process() {
                             }*/
                             pid = fork();
                             if (pid == 0) {
-                                printf("Sending ROUTER_UPDATE (change of link status)\n");
+                                printf("<-Controller-> Sending ROUTER_UPDATE (change of link status)\n");
                                 nextHop = dijkstra(tpg);
                                 buf[0] = ROUTER_UPDATE;
                                 for (i = 0; i < n; i++) {
