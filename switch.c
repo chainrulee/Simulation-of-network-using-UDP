@@ -159,7 +159,7 @@ void process_keep_alive(char buf[]) {
 	printf("<-Switch->  self id: %d, nid: %d, port: 0x%x \n", self_id, nid, remaddr.sin_port);
 	int link_fail = neighbors[idx].link_fail;
 	if (link_fail == 1) {
-		printf("<-Switch->  neibor id: %d, link_fail: %d, do nothing when getting KEEP_ALIVR pkt. \n", nid, link_fail);
+		printf("<-Switch->  neibor id: %d, link_fail: %d, do nothing when getting KEEP_ALIVE pkt. \n", nid, link_fail);
 		return;
 	}
 
@@ -351,7 +351,7 @@ void timer_thread(union sigval v)
 
 	int i, j = 3, live_num = 0, idx = -1;
 	for (i = 0; i < neighbor_number; ++i) {
-	    if (neighbors[i].active == 1) {
+	    if (neighbors[i].active == 1 && neighbors[i].nid != monitor_nid) {
 			buf[j++] = neighbors[i].nid;
 			++live_num;
 		}
@@ -359,7 +359,6 @@ void timer_thread(union sigval v)
 		    idx = i;
 		}
 	}
-	--live_num;
 	if (idx > -1) {
 		neighbors[idx].active = 0;
 	}
